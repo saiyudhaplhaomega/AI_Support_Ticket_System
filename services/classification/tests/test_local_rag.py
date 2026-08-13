@@ -45,6 +45,18 @@ def test_retrieval_returns_at_most_top_three_ranked_matches():
     assert result.fallback is None
 
 
+def test_bundled_kb_returns_context_for_a_relevant_duplicate_charge_question():
+    root = Path(__file__).resolve().parents[3] / "knowledge-base" / "noavia"
+    embedder = DeterministicHashEmbedder()
+    store = InMemoryVectorStore()
+    ingest_directory(root, embedder, store)
+
+    result = retrieve("I was charged twice for my subscription", embedder, store)
+
+    assert result.low_confidence is False
+    assert result.matches[0].metadata["source"] == "knowledge-base/noavia/duplicate-charge.md"
+
+
 def test_low_confidence_returns_no_context_and_manual_review_fallback():
     store = InMemoryVectorStore()
     store.upsert([DocumentChunk("a", "unrelated", {})], [[0.0, 1.0]])

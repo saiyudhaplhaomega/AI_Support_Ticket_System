@@ -18,8 +18,13 @@ from typing import Protocol
 DEFAULT_CHUNK_WORDS = 120
 DEFAULT_CHUNK_OVERLAP_WORDS = 24
 DEFAULT_TOP_K = 3
-DEFAULT_CONFIDENCE_THRESHOLD = 0.28
+# Calibrated against the bundled fixture corpus: a direct duplicate-charge
+# question scores 0.20 while an unrelated astronomy question scores 0.07.
+DEFAULT_CONFIDENCE_THRESHOLD = 0.10
 _TOKEN_RE = re.compile(r"[a-z0-9]+")
+_STOP_WORDS = frozenset({
+    "a", "an", "and", "are", "for", "i", "in", "is", "it", "my", "of", "on", "or", "the", "to", "was", "we", "with", "you", "your",
+})
 
 
 @dataclass(frozen=True)
@@ -146,7 +151,7 @@ def retrieve(query: str, embedder: Embedder, store: VectorStore, *, top_k: int =
 
 
 def _tokens(text: str) -> list[str]:
-    return _TOKEN_RE.findall(text.lower())
+    return [token for token in _TOKEN_RE.findall(text.lower()) if token not in _STOP_WORDS]
 
 
 def _source_path(path: Path) -> str:
