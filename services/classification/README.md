@@ -194,6 +194,25 @@ pip install -r requirements-dev.txt
 pytest -q
 ```
 
+## Deterministic local RAG path
+
+For local fixtures and contract testing, `app.local_rag` offers a standalone
+credential-free adapter. It deliberately does not call the HTTP service,
+OpenAI, or Qdrant. `DeterministicHashEmbedder` uses a stable BLAKE2b signed
+hash embedding and `InMemoryVectorStore` provides deterministic upsert/search.
+Hosted adapters may replace either behind the `Embedder` and `VectorStore`
+protocols without changing a caller.
+
+`ingest_directory(Path("knowledge-base/noavia"), embedder, store)` reads
+`.md`/`.txt` files in sorted path order. It chunks at 120 whitespace-delimited
+words with a 24-word overlap and gives each chunk a stable id
+`<source>#<index>`, plus `source`, `title`, and `chunk_index` metadata.
+`retrieve(...)` returns at most three cosine-ranked chunks. Its default
+threshold is **0.28**: if the highest score is below it (or the store is
+empty), it returns no context with `low_confidence=true` and the explicit
+`manual_review` fallback. Consumers must route that fallback rather than
+inventing an answer.
+
 ## Design notes for whoever touches this next
 
 - **Structured output, not prompt-and-hope.** Classification uses OpenAI's
