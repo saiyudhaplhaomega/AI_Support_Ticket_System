@@ -58,6 +58,7 @@ def main() -> None:
         "RAG Lookup OK?",
         "Classification Fallback",
         "RAG Fallback",
+        "draft.grounded-reply.v1",
         "route.by-classification.v1",
         "notify.google-sheets.v1",
         "notify.routing-email.v1",
@@ -91,7 +92,8 @@ def main() -> None:
     assert graph["Validation OK?"]["main"][1][0]["node"] == "audit.validation-rejection.v1"
     assert graph["audit.validation-rejection.v1"]["main"][0][0]["node"] == "Respond Validation Error"
     for outcome in ("Attach RAG Matches", "RAG Fallback", "Classification Fallback"):
-        assert graph[outcome]["main"][0][0]["node"] == "route.by-classification.v1"
+        assert graph[outcome]["main"][0][0]["node"] == "draft.grounded-reply.v1"
+    assert graph["draft.grounded-reply.v1"]["main"][0][0]["node"] == "route.by-classification.v1"
 
     webhook = nodes["Ingest Support Ticket"]["parameters"]
     assert webhook["responseMode"] == "responseNode"
@@ -219,7 +221,19 @@ def main() -> None:
         "processing_error": None,
     }
     route_input["config"]["routing_emails"] = {"billing": "billing@example.com"}
-    routed = run_code_node(nodes["route.by-classification.v1"]["parameters"]["jsCode"], route_input)[0]["json"]
+    attached = run_code_node(nodes["Attach RAG Matches"]["parameters"]["jsCode"], {"data": {"matches": route_input["rag_matches"]}}, node_data={"Prepare RAG Lookup": route_input})[0]["json"]
+    drafted = run_code_node(nodes["draft.grounded-reply.v1"]["parameters"]["jsCode"], attached)[0]["json"]
+    assert drafted["grounded_draft_reply"]["citations"] == [
+        {"id": "", "score": 0.9234, "citation": "kb/duplicate-charge", "metadata": {"source": "kb/duplicate-charge"}},
+        {"id": "", "score": 0.8123, "citation": "kb/billing", "metadata": {"source": "kb/billing"}},
+    ]
+    assert "[1] kb/duplicate-charge" in drafted["grounded_draft_reply"]["text"]
+    routed = run_code_node(nodes["route.by-classification.v1"]["parameters"]["jsCode"], drafted)[0]["json"]
+    low_attached = run_code_node(nodes["Attach RAG Matches"]["parameters"]["jsCode"], {"data": {"matches": [{"score": 0.59, "content": "Unverified guidance", "metadata": {"source": "kb/unverified"}}]}}, node_data={"Prepare RAG Lookup": route_input})[0]["json"]
+    assert low_attached["rag_below_threshold"] is True
+    low_retrieval = run_code_node(nodes["draft.grounded-reply.v1"]["parameters"]["jsCode"], low_attached)[0]["json"]
+    assert low_retrieval["rag_matches"] == [] and low_retrieval["grounded_draft_reply"]["citations"] == []
+    assert low_retrieval["grounded_draft_reply"]["text"] == "No specific policy found — this response is based on general knowledge."
     expected_sheet_columns = [
         "received_at", "ticket_id", "correlation_id", "requester_email", "subject", "category",
         "confidence", "tags", "route_queue", "route_email", "status", "attachment_name",
@@ -231,12 +245,18 @@ def main() -> None:
     assert routed["sheet_row"]["rag_match_count"] == 2
     assert "[0.923] Use the duplicate-charge refund policy." in routed["sheet_row"]["rag_context"]
     assert "Correlation ID: corr-valid" in routed["notification_text"]
-    assert "kb/duplicate-charge" not in routed["sheet_row"]["rag_context"]
+    assert "kb/duplicate-charge" in routed["grounded_draft_reply"]["text"]
 
     fallback_route_input = {**route_input, "classification": {"category": "unknown", "confidence": 0.44, "tags": []}}
     fallback_route_input["config"] = {**route_input["config"], "routing_emails": {}}
-    fallback_route = run_code_node(nodes["route.by-classification.v1"]["parameters"]["jsCode"], fallback_route_input)[0]["json"]
-    assert fallback_route["route"] == {"queue": "unknown", "email": "support@example.com"}
+    fallback_draft = run_code_node(nodes["draft.grounded-reply.v1"]["parameters"]["jsCode"], {**fallback_route_input, "knowledge_sources": [], "rag_below_threshold": False})[0]["json"]
+    fallback_route = run_code_node(nodes["route.by-classification.v1"]["parameters"]["jsCode"], fallback_draft)[0]["json"]
+    assert fallback_route["route"] == {"queue": "manual_review", "email": "support@example.com"}
+    assert fallback_route["processing_status"] == "needs-manual-review"
+    urgent_low_confidence = {**route_input, "classification": {"category": "billing", "confidence": 0.59, "urgency": "critical", "tags": []}}
+    urgent_low_confidence = run_code_node(nodes["draft.grounded-reply.v1"]["parameters"]["jsCode"], {**urgent_low_confidence, "knowledge_sources": [], "rag_below_threshold": False})[0]["json"]
+    urgent_low_confidence = run_code_node(nodes["route.by-classification.v1"]["parameters"]["jsCode"], urgent_low_confidence)[0]["json"]
+    assert urgent_low_confidence["processing_status"] == "needs-manual-review" and urgent_low_confidence["route"]["queue"] == "manual_review"
 
     sheets_columns = nodes["notify.google-sheets.v1"]["parameters"]["columns"]["value"]
     assert list(sheets_columns) == expected_sheet_columns
@@ -245,6 +265,9 @@ def main() -> None:
     raw = WORKFLOW.read_text()
     assert not any(value in raw for value in ("sk-", "AIza", "smtp.gmail.com"))
     assert "manual_review" in nodes["Classification Fallback"]["parameters"]["jsCode"]
+    assert "confidence < 0.6" in nodes["route.by-classification.v1"]["parameters"]["jsCode"]
+    assert "rag_min_score ?? 0.6" in nodes["Attach RAG Matches"]["parameters"]["jsCode"]
+    assert "No specific policy found — this response is based on general knowledge." in nodes["draft.grounded-reply.v1"]["parameters"]["jsCode"]
     assert nodes["notify.google-sheets.v1"]["onError"] == "continueRegularOutput"
     assert nodes["notify.routing-email.v1"]["onError"] == "continueRegularOutput"
     print(f"PASS: {len(nodes)} nodes; validation envelope, audit telemetry, fallbacks, and delivery contracts present")
