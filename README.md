@@ -19,6 +19,7 @@ Implements the interface contract in
 | `knowledge-base/` | Reserved, product-neutral source material for future ingestion; it contains no customer data in this baseline |
 | `scripts/` | Offline repository verification helpers; no deployment automation is included in Phase 1 |
 | `docs/` | Architecture contract and recovery provenance |
+| `docs/n8n-paperclip-api-access.md` | Approval-gated, project-isolated API access runbook for Paperclip/control-plane agents |
 
 ## Quickstart
 
