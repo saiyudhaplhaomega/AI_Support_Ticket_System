@@ -137,6 +137,34 @@ def main() -> None:
     assert valid["ok"] is True and valid["ticket"]["id"] == "NVA-1"
     assert valid["correlation_id"] == "corr-valid"
 
+    invalid_pdf = run_code_node(
+        validator,
+        valid_payload,
+        binary={"data": {"mimeType": "text/plain", "fileName": "notes.txt", "fileSize": 20}},
+    )[0]["json"]
+    assert invalid_pdf["ok"] is False
+    assert {detail["message"] for detail in invalid_pdf["error"]["details"]} == {"attachment must be a PDF"}
+    oversized_pdf = run_code_node(
+        validator,
+        valid_payload,
+        binary={"data": {"mimeType": "application/pdf", "fileName": "ticket.pdf", "fileSize": 10 * 1024 * 1024 + 1}},
+    )[0]["json"]
+    assert oversized_pdf["ok"] is False
+    assert {detail["message"] for detail in oversized_pdf["error"]["details"]} == {"PDF exceeds 10 MB"}
+
+    pdf_context = run_code_node(
+        nodes["Add PDF Context"]["parameters"]["jsCode"],
+        {"text": "The attached invoice has two August charges."},
+        node_data={"audit.ingestion.v1": valid},
+    )[0]["json"]
+    assert pdf_context["ticket"]["text"].endswith("PDF attachment:\nThe attached invoice has two August charges.")
+    pdf_empty_fallback = run_code_node(
+        nodes["Add PDF Context"]["parameters"]["jsCode"],
+        {"text": "  "},
+        node_data={"audit.ingestion.v1": valid},
+    )[0]["json"]
+    assert pdf_empty_fallback["ticket"]["text"] == valid["ticket"]["text"]
+
     audit_nodes = (
         "audit.ingestion.v1",
         "audit.validation-rejection.v1",
@@ -179,6 +207,40 @@ def main() -> None:
     assert delivery["error"]["details"][0]["target"] == "google_sheets"
     assert delivery["audit_logs"][-1]["level"] == "error"
     assert delivery["audit_logs"][-1]["correlation_id"] == "corr-delivery"
+
+    route_input = {
+        **valid,
+        "classification": {"category": "billing", "confidence": 0.87, "tags": ["duplicate_charge", "refund"]},
+        "rag_matches": [
+            {"score": 0.9234, "content": "Use the duplicate-charge refund policy.", "metadata": {"source": "kb/duplicate-charge"}},
+            {"score": 0.8123, "content": "Ask for the transaction dates.", "metadata": {"source": "kb/billing"}},
+        ],
+        "processing_status": "routed",
+        "processing_error": None,
+    }
+    route_input["config"]["routing_emails"] = {"billing": "billing@example.com"}
+    routed = run_code_node(nodes["route.by-classification.v1"]["parameters"]["jsCode"], route_input)[0]["json"]
+    expected_sheet_columns = [
+        "received_at", "ticket_id", "correlation_id", "requester_email", "subject", "category",
+        "confidence", "tags", "route_queue", "route_email", "status", "attachment_name",
+        "rag_match_count", "rag_context", "error_code", "error_message",
+    ]
+    assert list(routed["sheet_row"]) == expected_sheet_columns
+    assert routed["route"] == {"queue": "billing", "email": "billing@example.com"}
+    assert routed["sheet_row"]["confidence"] == 0.87
+    assert routed["sheet_row"]["rag_match_count"] == 2
+    assert "[0.923] Use the duplicate-charge refund policy." in routed["sheet_row"]["rag_context"]
+    assert "Correlation ID: corr-valid" in routed["notification_text"]
+    assert "kb/duplicate-charge" not in routed["sheet_row"]["rag_context"]
+
+    fallback_route_input = {**route_input, "classification": {"category": "unknown", "confidence": 0.44, "tags": []}}
+    fallback_route_input["config"] = {**route_input["config"], "routing_emails": {}}
+    fallback_route = run_code_node(nodes["route.by-classification.v1"]["parameters"]["jsCode"], fallback_route_input)[0]["json"]
+    assert fallback_route["route"] == {"queue": "unknown", "email": "support@example.com"}
+
+    sheets_columns = nodes["notify.google-sheets.v1"]["parameters"]["columns"]["value"]
+    assert list(sheets_columns) == expected_sheet_columns
+    assert all(value == "={{ $json.sheet_row." + column + " }}" for column, value in sheets_columns.items())
 
     raw = WORKFLOW.read_text()
     assert not any(value in raw for value in ("sk-", "AIza", "smtp.gmail.com"))
