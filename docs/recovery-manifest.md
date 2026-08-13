@@ -1,4 +1,4 @@
-# SAI-14 recovery manifest
+# SAI-16 recovery manifest
 
 Recovered on 2026-08-13 from the misplaced onboarding workspace:
 
@@ -36,3 +36,18 @@ service, credential, network, n8n, Qdrant, Google Sheets, or SMTP changes.
 `knowledge-base/` and `scripts/` were established as safe repository contracts:
 the former is empty except for handling guidance, and the latter contains only
 an offline verification wrapper.
+
+## Verification evidence
+
+- `scripts/verify-baseline.sh` completed successfully on 2026-08-13, confirming
+  the workflow's 23 nodes plus validation, audit telemetry, fallback, and
+  delivery-contract checks.
+- A tracked-file scan on 2026-08-13 found no private-key blocks or common live
+  credential markers (AWS access keys, Slack tokens, GitHub tokens, or OpenAI
+  secret-key patterns).
+- `git check-ignore -v` confirms `.env` files are excluded. The repository
+  policy also excludes runtime data, volumes, caches, Python bytecode, and
+  generated test artifacts; none are tracked in this baseline.
+- The recovered artifact commit is `ebd1c93`; the access-runbook commit is
+  `85c52f4`. Publication remains pending a GitHub credential for the canonical
+  remote.
