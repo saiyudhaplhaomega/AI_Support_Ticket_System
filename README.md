@@ -1,0 +1,103 @@
+# NOAVIA canonical baseline
+
+Recovered, canonical repository for the reusable Docker Compose substrate and
+its first consumer, NOAVIA (n8n + Qdrant + classification). Future SaaS
+products extend the same capability-module contracts rather than duplicating
+product-specific infrastructure.
+Implements the interface contract in
+`../capability-module-architecture.md` §3.3.
+
+## What's here
+
+| File | Purpose |
+|---|---|
+| `docker-compose.yml` | Network, volumes, reverse-proxy, n8n, Qdrant, classification-service slot |
+| `.env.example` | Every env var the stack reads, with the `<FAMILY>_<PURPOSE>` naming convention — copy to `.env`, fill in, never commit `.env` |
+| `Caddyfile` | HTTPS-ready reverse proxy config (automatic Let's Encrypt certs) |
+| `.gitignore` | Keeps `.env` and local runtime state out of version control |
+| `services/classification/` | `ai.classify-ticket.v1` / `ai.rag-lookup.v1` HTTP service (RAG & AI Integration Engineer) — see its own README for the interface contract |
+| `knowledge-base/` | Reserved, product-neutral source material for future ingestion; it contains no customer data in this baseline |
+| `scripts/` | Offline repository verification helpers; no deployment automation is included in Phase 1 |
+| `docs/` | Architecture contract and recovery provenance |
+
+## Quickstart
+
+```sh
+cp .env.example .env
+# edit .env: real domain, real secrets, generate N8N_ENCRYPTION_KEY
+docker compose up -d
+```
+
+n8n comes up behind the reverse proxy at `https://$N8N_PUBLIC_DOMAIN`.
+Qdrant is reachable internally at `http://qdrant:6333` — no host port, no
+public route.
+
+## Security model
+
+1. **Secrets never in code.** Every credential in `docker-compose.yml` is a
+   `${VAR}` interpolation. Real values live only in `.env` (git-ignored) or a
+   real secret-store in production — never hardcoded, never committed.
+2. **Private networking by default.** All services share the `saas-internal`
+   Docker network. It is a normal bridge network (not `internal: true`) so
+   containers keep outbound internet access for OpenAI/Google/SMTP calls —
+   isolation comes from *not publishing host ports*, not from blocking
+   egress. Only `reverse-proxy` publishes `80`/`443`; every other service is
+   reachable solely by DNS name (`n8n`, `qdrant`, …) on that network.
+3. **HTTPS for anything public.** `reverse-proxy` (Caddy) is the single
+   public entry point and auto-provisions/renews TLS certs. A service only
+   becomes internet-reachable when someone deliberately adds a route for it
+   in `Caddyfile` — the default posture is internal-only.
+4. **Qdrant is authenticated and capability-scoped.** The Qdrant container holds `QDRANT_SERVICE_API_KEY` and has JWT RBAC enabled. `classification-service` alone receives `AI_QDRANT_API_KEY`, a short-lived JWT restricted to the collection(s) it needs. n8n receives neither a Qdrant URL nor key, and must use the classification API. Issue the JWT in the deploy secret-store with an `access` claim such as `[{"collection":"kb_documents","access":"rw"}]`; pre-create collections because collection-scoped credentials cannot create them. The signing/admin key must never be injected into an application container.
+5. **Persistent volumes.** n8n workflow/credential state and Qdrant vector
+   data survive container restarts/upgrades via named volumes
+   (`n8n_data`, `qdrant_data`, `classification_data`). Back these up in
+   production; they hold state, not secrets, but losing them loses data.
+
+## Verification
+
+Before deployment, validate the rendered Compose configuration and Caddyfile using deploy-time secret values (never paste secrets into commands or source control):
+
+```sh
+docker compose config --quiet
+docker compose run --rm --no-deps reverse-proxy caddy validate --adapter caddyfile --config /etc/caddy/Caddyfile
+```
+
+The repository contract check can be run offline with `./scripts/verify-baseline.sh`. It asserts Qdrant authentication/RBAC, that n8n has no Qdrant credential or URL, and the exact 10 MB Caddy rule for the NOAVIA webhook. An upload greater than 10 MB receives Caddy's `413` before reaching n8n.
+
+## Extending this for a new module or product
+
+- **Add a module that talks to n8n/Qdrant:** add a service block, attach it
+  to `saas-internal`, read secrets from env vars declared in `.env.example`
+  (add new ones there following `<FAMILY>_<PURPOSE>` naming — see
+  architecture doc §4). Don't touch existing service blocks.
+- **Add a module that needs public HTTPS:** add a route in `Caddyfile`
+  pointing at the service's container name/port. Don't publish its own host
+  port in `docker-compose.yml` — everything public routes through Caddy.
+- **Add a whole new product:** either extend this `docker-compose.yml`
+  directly, or layer a product-specific override file
+  (`docker compose -f docker-compose.yml -f product.yml up`) that adds its
+  own services onto the same `saas-internal` network. This file is meant to
+  stay product-agnostic — nothing here is NOAVIA-specific.
+
+## Fail-fast on missing secrets
+
+Per the interface contract, a module must fail with a clear structured error
+at startup if a required env var is missing — not silently fall back to a
+default. `docker-compose.yml` intentionally does not set defaults for
+secret-bearing vars (`AI_CLASSIFY_API_KEY`, `OPENAI_API_KEY`,
+`N8N_BASIC_AUTH_PASSWORD`, etc.); each service's own startup validation is
+responsible for refusing to run without them.
+
+## Open item inherited from the architecture doc — resolved
+
+Architecture doc §7 asked whether `ai.classify-ticket`/`ai.rag-lookup` are
+invoked as n8n sub-workflows or a standalone HTTP service. Resolved: **HTTP
+service**, implemented in `services/classification/` (RAG & AI Integration
+Engineer, issue SAI-5). Start it with
+`docker compose --profile classification-service up -d --build`; n8n reaches
+it at `http://classification-service:8080` on `saas-internal`, authenticating
+with `Authorization: Bearer $AI_CLASSIFY_API_KEY`. See
+`services/classification/README.md` for the full interface contract. No
+infra rework was needed — the pre-existing slot in `docker-compose.yml` just
+needed a `Dockerfile` and its environment block filled in with the `ai.*`
+tuning vars now documented in `.env.example`.

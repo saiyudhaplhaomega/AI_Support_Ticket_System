@@ -1,0 +1,804 @@
+{
+  "name": "workflow.noavia-ticket-pipeline.v1",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "noavia/tickets/v1",
+        "authentication": "headerAuth",
+        "responseMode": "responseNode",
+        "options": {
+          "binaryData": true
+        }
+      },
+      "id": "noavia-001",
+      "name": "Ingest Support Ticket",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        -1160,
+        160
+      ],
+      "webhookId": "noavia-ticket-pipeline-v1",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "REPLACE_WITH_N8N_CREDENTIAL_ID",
+          "name": "NOAVIA Ingest Header Auth"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const input = ($json.body && typeof $json.body === 'object') ? $json.body : $json;\nconst correlationId = String(input.correlation_id ?? `noavia-${Date.now()}-${Math.random().toString(16).slice(2)}`);\nconst errors = [];\nconst required = (value, field) => { if (typeof value !== 'string' || !value.trim()) { errors.push({ field, message: `${field} is required` }); return ''; } return value.trim(); };\nconst subject = required(input.subject, 'subject');\nconst body = required(input.body ?? input.message ?? input.text, 'body');\nconst requesterEmail = required(input.requester_email ?? input.from ?? input.email, 'requester_email');\nif (requesterEmail && !/^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/.test(requesterEmail)) errors.push({ field: 'requester_email', message: 'requester_email is invalid' });\nconst config = (input.config && typeof input.config === 'object') ? input.config : {};\nconst normalizedConfig = {};\nfor (const key of ['sheet_id', 'sheet_name', 'default_route_email', 'from_email']) normalizedConfig[key] = required(config[key], `config.${key}`);\nconst attachment = $binary?.data;\nif (attachment) { const mime = String(attachment.mimeType ?? '').toLowerCase(); const name = String(attachment.fileName ?? '').toLowerCase(); if (mime !== 'application/pdf' && !name.endsWith('.pdf')) errors.push({ field: 'attachment', message: 'attachment must be a PDF' }); const size = Number(attachment.fileSize ?? 0); if (Number.isFinite(size) && size > 10 * 1024 * 1024) errors.push({ field: 'attachment', message: 'PDF exceeds 10 MB' }); }\nif (errors.length) return [{ json: { ok: false, error: { code: 'VALIDATION_ERROR', message: 'Ticket validation failed', details: errors }, correlation_id: correlationId, audit_logs: [] } }];\nreturn [{ json: { ok: true, ticket: { id: String(input.ticket_id ?? correlationId), subject, body, text: `${subject}\\n\\n${body}`, requester_email: requesterEmail, locale: String(input.locale ?? 'en'), received_at: new Date().toISOString(), attachment_name: attachment?.fileName ?? null }, context: typeof input.context === 'object' && input.context ? input.context : {}, config: { ...normalizedConfig, routing_emails: config.routing_emails ?? {}, top_k: Math.min(Math.max(Number(config.top_k ?? 5), 1), 50), rag_filter: config.rag_filter ?? undefined, rag_collection: config.rag_collection ?? undefined }, correlation_id: correlationId, audit_logs: [] }, binary: $binary }];"
+      },
+      "id": "noavia-002",
+      "name": "Validate and Normalize",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -940,
+        160
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const record = { ts: new Date().toISOString(), module: 'noavia.ticket-pipeline', interface_id: 'workflow.noavia-ticket-pipeline.v1', version: '1', correlation_id: $json.correlation_id, level: 'info', message: 'Ticket ingested' };\nconsole.log(JSON.stringify(record));\nreturn [{ json: { ...$json, audit_logs: [...($json.audit_logs ?? []), record] }, binary: $binary }];"
+      },
+      "id": "noavia-018",
+      "name": "audit.ingestion.v1",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -760,
+        160
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "validation-ok",
+              "leftValue": "={{ $json.ok }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "noavia-019",
+      "name": "Validation OK?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        -560,
+        160
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const record = { ts: new Date().toISOString(), module: 'noavia.ticket-pipeline', interface_id: 'workflow.noavia-ticket-pipeline.v1', version: '1', correlation_id: $json.correlation_id, level: 'warn', message: 'Ticket rejected by validation' };\nconsole.log(JSON.stringify(record));\nreturn [{ json: { ...$json, audit_logs: [...($json.audit_logs ?? []), record] } }];"
+      },
+      "id": "noavia-020",
+      "name": "audit.validation-rejection.v1",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -340,
+        360
+      ]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ { ok: false, error: $json.error, correlation_id: $json.correlation_id } }}",
+        "options": {
+          "responseCode": 400
+        }
+      },
+      "id": "noavia-021",
+      "name": "Respond Validation Error",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.4,
+      "position": [
+        -120,
+        360
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "has-pdf",
+              "leftValue": "={{ Boolean($binary && $binary.data) }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "noavia-003",
+      "name": "Has PDF Attachment?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        -720,
+        160
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "pdf",
+        "binaryPropertyName": "data",
+        "options": {}
+      },
+      "id": "noavia-004",
+      "name": "Extract PDF Text",
+      "type": "n8n-nodes-base.extractFromFile",
+      "typeVersion": 1,
+      "position": [
+        -500,
+        60
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const base = $('audit.ingestion.v1').item.json;\nconst extracted = String($json.text ?? $json.data ?? '').trim();\nreturn [{ json: { ...base, ticket: { ...base.ticket, text: extracted ? `${base.ticket.text}\\n\\nPDF attachment:\\n${extracted}` : base.ticket.text } } }];"
+      },
+      "id": "noavia-005",
+      "name": "Add PDF Context",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -280,
+        60
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "return [{ json: $json }];"
+      },
+      "id": "noavia-006",
+      "name": "No Attachment",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -500,
+        260
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://classification-service:8080/ai/classify-ticket/v1",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "={{ 'Bearer ' + $env.AI_CLASSIFY_API_KEY }}"
+            },
+            {
+              "name": "X-Correlation-Id",
+              "value": "={{ $json.correlation_id }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "contentType": "raw",
+        "rawContentType": "application/json",
+        "body": "={{ JSON.stringify({ text: $json.ticket.text, context: $json.context, locale: $json.ticket.locale }) }}",
+        "options": {
+          "response": {
+            "response": {
+              "neverError": true,
+              "responseFormat": "json"
+            }
+          },
+          "timeout": 10000
+        }
+      },
+      "id": "noavia-007",
+      "name": "ai.classify-ticket.v1",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -40,
+        160
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "classify-ok",
+              "leftValue": "={{ $json.ok }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "noavia-008",
+      "name": "Classification OK?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        180,
+        160
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const base = $('audit.ingestion.v1').item.json;\nreturn [{ json: { ...base, classification: $json.data } }];"
+      },
+      "id": "noavia-009",
+      "name": "Prepare RAG Lookup",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        400,
+        60
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://classification-service:8080/ai/rag-lookup/v1",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "={{ 'Bearer ' + $env.AI_CLASSIFY_API_KEY }}"
+            },
+            {
+              "name": "X-Correlation-Id",
+              "value": "={{ $json.correlation_id }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "contentType": "raw",
+        "rawContentType": "application/json",
+        "body": "={{ JSON.stringify({ query: $json.ticket.text, top_k: $json.config.top_k, filter: $json.config.rag_filter, collection: $json.config.rag_collection }) }}",
+        "options": {
+          "response": {
+            "response": {
+              "neverError": true,
+              "responseFormat": "json"
+            }
+          },
+          "timeout": 10000
+        }
+      },
+      "id": "noavia-010",
+      "name": "ai.rag-lookup.v1",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        620,
+        60
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "rag-ok",
+              "leftValue": "={{ $json.ok }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "noavia-011",
+      "name": "RAG Lookup OK?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        840,
+        60
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const base = $('Prepare RAG Lookup').item.json;\nreturn [{ json: { ...base, rag_matches: $json.data.matches, processing_status: 'routed', processing_error: null } }];"
+      },
+      "id": "noavia-012",
+      "name": "Attach RAG Matches",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1060,
+        -20
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const base = $('Prepare RAG Lookup').item.json;\nconst processingError = $json.error ?? { code: 'UPSTREAM_ERROR', message: 'RAG lookup failed' };\nconst record = { ts: new Date().toISOString(), module: 'noavia.ticket-pipeline', interface_id: 'workflow.noavia-ticket-pipeline.v1', version: '1', correlation_id: base.correlation_id, level: 'warn', message: 'AI RAG fallback activated' };\nconsole.log(JSON.stringify(record));\nreturn [{ json: { ...base, rag_matches: [], processing_status: 'routed_without_rag', processing_error: processingError, audit_logs: [...(base.audit_logs ?? []), record] } }];"
+      },
+      "id": "noavia-013",
+      "name": "RAG Fallback",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1060,
+        140
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const base = $('audit.ingestion.v1').item.json;\nconst processingError = $json.error ?? { code: 'UPSTREAM_ERROR', message: 'Classification failed' };\nconst record = { ts: new Date().toISOString(), module: 'noavia.ticket-pipeline', interface_id: 'workflow.noavia-ticket-pipeline.v1', version: '1', correlation_id: base.correlation_id, level: 'warn', message: 'AI classification fallback activated' };\nconsole.log(JSON.stringify(record));\nreturn [{ json: { ...base, classification: { category: 'manual_review', confidence: 0, tags: ['classification_failed'] }, rag_matches: [], processing_status: 'manual_review', processing_error: processingError, audit_logs: [...(base.audit_logs ?? []), record] } }];"
+      },
+      "id": "noavia-014",
+      "name": "Classification Fallback",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        400,
+        280
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const routeMap = $json.config.routing_emails ?? {};\nconst category = String($json.classification.category ?? 'manual_review');\nconst routeEmail = routeMap[category] ?? $json.config.default_route_email;\nconst queue = category === 'manual_review' ? 'manual_review' : category;\nconst contextSummary = ($json.rag_matches ?? []).slice(0, 5).map((m, i) => `${i + 1}. [${Number(m.score).toFixed(3)}] ${m.content}`).join('\\n\\n');\nreturn [{ json: { ...$json, route: { queue, email: routeEmail }, sheet_row: { received_at: $json.ticket.received_at, ticket_id: $json.ticket.id, correlation_id: $json.correlation_id, requester_email: $json.ticket.requester_email, subject: $json.ticket.subject, category, confidence: $json.classification.confidence, tags: ($json.classification.tags ?? []).join(','), route_queue: queue, route_email: routeEmail, status: $json.processing_status, attachment_name: $json.ticket.attachment_name ?? '', rag_match_count: ($json.rag_matches ?? []).length, rag_context: contextSummary, error_code: $json.processing_error?.code ?? '', error_message: $json.processing_error?.message ?? '' }, notification_text: `NOAVIA ticket ${$json.ticket.id}\\nCategory: ${category} (${Math.round(Number($json.classification.confidence ?? 0) * 100)}%)\\nQueue: ${queue}\\nRequester: ${$json.ticket.requester_email}\\nSubject: ${$json.ticket.subject}\\nCorrelation ID: ${$json.correlation_id}\\nStatus: ${$json.processing_status}\\n\\nRelevant context:\\n${contextSummary || '(none)'}` } }];"
+      },
+      "id": "noavia-015",
+      "name": "route.by-classification.v1",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1280,
+        160
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "={{ $json.config.sheet_id }}"
+        },
+        "sheetName": {
+          "__rl": true,
+          "mode": "name",
+          "value": "={{ $json.config.sheet_name }}"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "received_at": "={{ $json.sheet_row.received_at }}",
+            "ticket_id": "={{ $json.sheet_row.ticket_id }}",
+            "correlation_id": "={{ $json.sheet_row.correlation_id }}",
+            "requester_email": "={{ $json.sheet_row.requester_email }}",
+            "subject": "={{ $json.sheet_row.subject }}",
+            "category": "={{ $json.sheet_row.category }}",
+            "confidence": "={{ $json.sheet_row.confidence }}",
+            "tags": "={{ $json.sheet_row.tags }}",
+            "route_queue": "={{ $json.sheet_row.route_queue }}",
+            "route_email": "={{ $json.sheet_row.route_email }}",
+            "status": "={{ $json.sheet_row.status }}",
+            "attachment_name": "={{ $json.sheet_row.attachment_name }}",
+            "rag_match_count": "={{ $json.sheet_row.rag_match_count }}",
+            "rag_context": "={{ $json.sheet_row.rag_context }}",
+            "error_code": "={{ $json.sheet_row.error_code }}",
+            "error_message": "={{ $json.sheet_row.error_message }}"
+          },
+          "matchingColumns": [],
+          "schema": [],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": true
+        },
+        "options": {}
+      },
+      "id": "noavia-016",
+      "name": "notify.google-sheets.v1",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.6,
+      "position": [
+        1500,
+        160
+      ],
+      "alwaysOutputData": true,
+      "onError": "continueRegularOutput",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "REPLACE_WITH_N8N_CREDENTIAL_ID",
+          "name": "NOAVIA Google Sheets"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "fromEmail": "={{ $('route.by-classification.v1').item.json.config.from_email }}",
+        "toEmail": "={{ $('route.by-classification.v1').item.json.route.email }}",
+        "subject": "={{ '[NOAVIA][' + $('route.by-classification.v1').item.json.route.queue + '] ' + $('route.by-classification.v1').item.json.ticket.subject }}",
+        "emailFormat": "text",
+        "text": "={{ $('route.by-classification.v1').item.json.notification_text }}",
+        "options": {}
+      },
+      "id": "noavia-017",
+      "name": "notify.routing-email.v1",
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 2.1,
+      "position": [
+        1720,
+        160
+      ],
+      "credentials": {
+        "smtp": {
+          "id": "REPLACE_WITH_N8N_CREDENTIAL_ID",
+          "name": "NOAVIA SMTP"
+        }
+      },
+      "alwaysOutputData": true,
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "jsCode": "const base = $('route.by-classification.v1').item.json;\nconst sheets = $('notify.google-sheets.v1').item.json;\nconst describe = (value, target) => { const error = value?.error; if (!error) return null; return { target, code: String(error.code ?? 'DELIVERY_ERROR'), message: String(error.message ?? error) }; };\nconst failures = [describe(sheets, 'google_sheets'), describe($json, 'routing_email')].filter(Boolean);\nconst records = failures.map((failure) => ({ ts: new Date().toISOString(), module: 'noavia.ticket-pipeline', interface_id: 'workflow.noavia-ticket-pipeline.v1', version: '1', correlation_id: base.correlation_id, level: 'error', message: `${failure.target} delivery failed` }));\nfor (const record of records) console.log(JSON.stringify(record));\nconst auditLogs = [...(base.audit_logs ?? []), ...records];\nif (failures.length) return [{ json: { ok: false, error: { code: 'DELIVERY_ERROR', message: 'One or more ticket deliveries failed', details: failures }, correlation_id: base.correlation_id, audit_logs: auditLogs } }];\nreturn [{ json: { ok: true, data: { ticket_id: base.ticket.id, status: base.processing_status, route_queue: base.route.queue }, correlation_id: base.correlation_id, audit_logs: auditLogs } }];"
+      },
+      "id": "noavia-022",
+      "name": "audit.delivery-outcome.v1",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1940,
+        160
+      ]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ { ok: $json.ok, ...($json.ok ? { data: $json.data } : { error: $json.error }), correlation_id: $json.correlation_id } }}",
+        "options": {
+          "responseCode": "={{ $json.ok ? 200 : 502 }}"
+        }
+      },
+      "id": "noavia-023",
+      "name": "Respond Processing Result",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.4,
+      "position": [
+        2160,
+        160
+      ]
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Ingest Support Ticket": {
+      "main": [
+        [
+          {
+            "node": "Validate and Normalize",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validate and Normalize": {
+      "main": [
+        [
+          {
+            "node": "audit.ingestion.v1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Has PDF Attachment?": {
+      "main": [
+        [
+          {
+            "node": "Extract PDF Text",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "No Attachment",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract PDF Text": {
+      "main": [
+        [
+          {
+            "node": "Add PDF Context",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Add PDF Context": {
+      "main": [
+        [
+          {
+            "node": "ai.classify-ticket.v1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "No Attachment": {
+      "main": [
+        [
+          {
+            "node": "ai.classify-ticket.v1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "ai.classify-ticket.v1": {
+      "main": [
+        [
+          {
+            "node": "Classification OK?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Classification OK?": {
+      "main": [
+        [
+          {
+            "node": "Prepare RAG Lookup",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Classification Fallback",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare RAG Lookup": {
+      "main": [
+        [
+          {
+            "node": "ai.rag-lookup.v1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "ai.rag-lookup.v1": {
+      "main": [
+        [
+          {
+            "node": "RAG Lookup OK?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "RAG Lookup OK?": {
+      "main": [
+        [
+          {
+            "node": "Attach RAG Matches",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "RAG Fallback",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Attach RAG Matches": {
+      "main": [
+        [
+          {
+            "node": "route.by-classification.v1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "RAG Fallback": {
+      "main": [
+        [
+          {
+            "node": "route.by-classification.v1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Classification Fallback": {
+      "main": [
+        [
+          {
+            "node": "route.by-classification.v1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "route.by-classification.v1": {
+      "main": [
+        [
+          {
+            "node": "notify.google-sheets.v1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "notify.google-sheets.v1": {
+      "main": [
+        [
+          {
+            "node": "notify.routing-email.v1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "audit.ingestion.v1": {
+      "main": [
+        [
+          {
+            "node": "Validation OK?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validation OK?": {
+      "main": [
+        [
+          {
+            "node": "Has PDF Attachment?",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "audit.validation-rejection.v1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "audit.validation-rejection.v1": {
+      "main": [
+        [
+          {
+            "node": "Respond Validation Error",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "notify.routing-email.v1": {
+      "main": [
+        [
+          {
+            "node": "audit.delivery-outcome.v1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "audit.delivery-outcome.v1": {
+      "main": [
+        [
+          {
+            "node": "Respond Processing Result",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "saveManualExecutions": true,
+    "saveExecutionProgress": true,
+    "saveDataErrorExecution": "all",
+    "saveDataSuccessExecution": "none"
+  },
+  "versionId": "b67dd993-60e2-47df-9f89-2db68447c0c1",
+  "meta": {
+    "templateCredsSetupCompleted": false
+  },
+  "tags": [
+    {
+      "name": "workflow.noavia-ticket-pipeline.v1"
+    },
+    {
+      "name": "reference-consumer"
+    }
+  ]
+}

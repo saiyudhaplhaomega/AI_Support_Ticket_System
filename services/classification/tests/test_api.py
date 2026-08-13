@@ -1,0 +1,175 @@
+import openai
+import pytest
+from fastapi.testclient import TestClient
+from qdrant_client.http.exceptions import ApiException
+
+from app import main as main_module
+from app.schemas import _ModelClassification
+from tests.fakes import FakeOpenAI, FakeQdrant, fake_point
+
+AUTH = {"Authorization": "Bearer test-bearer-key"}
+
+
+@pytest.fixture()
+def client():
+    return TestClient(main_module.app)
+
+
+def test_healthz_no_auth_required(client):
+    resp = client.get("/healthz")
+    assert resp.status_code == 200
+    assert resp.json() == {"status": "ok"}
+
+
+def test_classify_requires_auth(client):
+    resp = client.post("/ai/classify-ticket/v1", json={"text": "hello"})
+    assert resp.status_code == 401
+    body = resp.json()
+    assert body["ok"] is False
+    assert body["error"]["code"] == "AUTH_ERROR"
+
+
+def test_classify_rejects_blank_text(client, monkeypatch):
+    monkeypatch.setattr(main_module, "get_openai_client", lambda cfg: FakeOpenAI())
+    resp = client.post("/ai/classify-ticket/v1", json={"text": "   "}, headers=AUTH)
+    assert resp.status_code == 200  # validation errors are envelope, not HTTP throw
+    body = resp.json()
+    assert body["ok"] is False
+    assert body["error"]["code"] == "VALIDATION_ERROR"
+    assert body["error"]["interface_id"] == "ai.classify-ticket"
+
+
+def test_validation_error_never_exposes_ticket_pii_in_body_or_logs(client, caplog):
+    pii = "SSN-123-45-6789"
+    with caplog.at_level("WARNING"):
+        resp = client.post("/ai/classify-ticket/v1", json={"text": {"ticket": pii}}, headers=AUTH)
+
+    assert resp.status_code == 200
+    assert resp.json()["error"]["message"] == "Request validation failed."
+    assert pii not in resp.text
+    assert pii not in caplog.text
+    record = next(record for record in caplog.records if record.getMessage() == "request validation failed")
+    assert record.extra_fields["validation_errors"] == [{"field": "text", "code": "string_type"}]
+
+
+def test_classify_success(client, monkeypatch):
+    parsed = _ModelClassification(category="billing", confidence=0.87, tags=["refund"])
+    monkeypatch.setattr(main_module, "get_openai_client", lambda cfg: FakeOpenAI(parsed=parsed))
+
+    resp = client.post(
+        "/ai/classify-ticket/v1",
+        json={"text": "I was charged twice for my subscription"},
+        headers=AUTH,
+    )
+    assert resp.status_code == 200
+    body = resp.json()
+    assert body["ok"] is True
+    assert body["data"]["category"] == "billing"
+    assert body["data"]["confidence"] == 0.87
+    assert body["data"]["tags"] == ["refund"]
+    assert body["data"]["raw_model_output"]["model"] == "gpt-4o-mini"
+    assert "X-Correlation-Id" in resp.headers
+
+
+def test_classify_correlation_id_echoed(client, monkeypatch):
+    parsed = _ModelClassification(category="technical", confidence=0.5, tags=[])
+    monkeypatch.setattr(main_module, "get_openai_client", lambda cfg: FakeOpenAI(parsed=parsed))
+    resp = client.post(
+        "/ai/classify-ticket/v1",
+        json={"text": "app crashes on login"},
+        headers={**AUTH, "X-Correlation-Id": "corr-fixed-1"},
+    )
+    assert resp.headers["X-Correlation-Id"] == "corr-fixed-1"
+
+
+def test_classify_upstream_timeout_maps_to_envelope(client, monkeypatch):
+    timeout_exc = openai.APITimeoutError(request=None)
+    monkeypatch.setattr(main_module, "get_openai_client", lambda cfg: FakeOpenAI(chat_exc=timeout_exc))
+    resp = client.post("/ai/classify-ticket/v1", json={"text": "hello there"}, headers=AUTH)
+    assert resp.status_code == 200
+    body = resp.json()
+    assert body["ok"] is False
+    assert body["error"]["code"] == "UPSTREAM_TIMEOUT"
+
+
+def test_rag_lookup_success(client, monkeypatch):
+    monkeypatch.setattr(main_module, "get_openai_client", lambda cfg: FakeOpenAI(vector=[0.1, 0.2]))
+    points = [fake_point("p1", 0.92, {"content": "Reset your password via Settings.", "source": "kb"})]
+    monkeypatch.setattr(main_module, "get_qdrant_client", lambda cfg: FakeQdrant(points=points))
+
+    resp = client.post("/ai/rag-lookup/v1", json={"query": "how do I reset my password"}, headers=AUTH)
+    assert resp.status_code == 200
+    body = resp.json()
+    assert body["ok"] is True
+    assert len(body["data"]["matches"]) == 1
+    match = body["data"]["matches"][0]
+    assert match["id"] == "p1"
+    assert match["score"] == 0.92
+    assert match["content"] == "Reset your password via Settings."
+    assert match["metadata"] == {"source": "kb"}
+
+
+def test_rag_lookup_unknown_collection_returns_empty_matches(client, monkeypatch):
+    monkeypatch.setattr(main_module, "get_openai_client", lambda cfg: FakeOpenAI())
+    monkeypatch.setattr(main_module, "get_qdrant_client", lambda cfg: FakeQdrant(collection_exists=False))
+
+    resp = client.post("/ai/rag-lookup/v1", json={"query": "anything"}, headers=AUTH)
+    assert resp.status_code == 200
+    body = resp.json()
+    assert body["ok"] is True
+    assert body["data"]["matches"] == []
+
+
+def test_rag_upstream_error_never_exposes_provider_details_in_body_or_logs(client, monkeypatch, caplog):
+    secret = "provider-secret-should-not-leak"
+    monkeypatch.setattr(main_module, "get_openai_client", lambda cfg: FakeOpenAI())
+    monkeypatch.setattr(
+        main_module,
+        "get_qdrant_client",
+        lambda cfg: FakeQdrant(query_exc=ApiException(status=502, reason=secret)),
+    )
+
+    with caplog.at_level("ERROR"):
+        resp = client.post("/ai/rag-lookup/v1", json={"query": "reset password"}, headers=AUTH)
+
+    assert resp.status_code == 200
+    body = resp.json()
+    assert body["error"]["code"] == "UPSTREAM_ERROR"
+    assert body["error"]["message"] == "Vector store query failed."
+    assert secret not in resp.text
+    assert secret not in caplog.text
+    record = next(record for record in caplog.records if record.getMessage() == "vector store query failed")
+    assert record.extra_fields["upstream_status"] == 502
+
+
+def test_rag_lookup_bad_filter_is_validation_error(client, monkeypatch):
+    monkeypatch.setattr(main_module, "get_openai_client", lambda cfg: FakeOpenAI())
+    monkeypatch.setattr(main_module, "get_qdrant_client", lambda cfg: FakeQdrant())
+
+    resp = client.post(
+        "/ai/rag-lookup/v1",
+        json={"query": "anything", "filter": {"not_a_real_filter_key": 1}},
+        headers=AUTH,
+    )
+    assert resp.status_code == 200
+    body = resp.json()
+    assert body["ok"] is False
+    assert body["error"]["code"] == "VALIDATION_ERROR"
+
+
+def test_ingest_success(client, monkeypatch):
+    monkeypatch.setattr(main_module, "get_openai_client", lambda cfg: FakeOpenAI(vector=[0.1, 0.2, 0.3]))
+    fake_qdrant = FakeQdrant(collection_exists=False)
+    monkeypatch.setattr(main_module, "get_qdrant_client", lambda cfg: fake_qdrant)
+
+    resp = client.post(
+        "/internal/ingest/v1",
+        json={"collection": "kb_documents", "records": [{"content": "doc one"}, {"content": "doc two"}]},
+        headers=AUTH,
+    )
+    assert resp.status_code == 200
+    body = resp.json()
+    assert body["ok"] is True
+    assert body["data"] == {"collection": "kb_documents", "ingested": 2}
+    assert len(fake_qdrant.upserted) == 1
+    assert len(fake_qdrant.upserted[0]["points"]) == 2

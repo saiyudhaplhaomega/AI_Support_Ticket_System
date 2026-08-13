@@ -1,0 +1,217 @@
+# ai.classify-ticket.v1 / ai.rag-lookup.v1 — classification & RAG service
+
+Owner: RAG & AI Integration Engineer. Standalone HTTP service implementing
+the two `ai.*` interfaces defined in
+[`capability-module-architecture.md`](../../../capability-module-architecture.md)
+§3.1/§3.2. Product-agnostic — NOAVIA is the first consumer, not the only one.
+Consumers (n8n or otherwise) only need this document; nothing below the
+"Endpoints" section is required reading to integrate.
+
+**§7 open question resolved:** this ships as a standalone HTTP service (not
+an n8n sub-workflow), so any future product — n8n-based or not — can call it
+the same way.
+
+## Running it
+
+```sh
+cd infra
+cp .env.example .env   # fill in OPENAI_API_KEY, AI_CLASSIFY_API_KEY at minimum
+docker compose --profile classification-service up -d --build
+```
+
+Reachable at `http://classification-service:8080` from any container on the
+`saas-internal` network (e.g. n8n's HTTP Request node). Not published to a
+host port and not routed through Caddy — internal-only, like Qdrant.
+
+## Auth
+
+Every endpoint below except `/healthz`/`/readyz` requires:
+
+```
+Authorization: Bearer <AI_CLASSIFY_API_KEY>
+```
+
+using the same `AI_CLASSIFY_API_KEY` value Infra already provisions in
+`.env`/the secret store (see `infra/.env.example`). Missing/invalid token →
+`401` with `error.code = "AUTH_ERROR"`.
+
+## Endpoints
+
+### `POST /ai/classify-ticket/v1`
+
+Request:
+
+```json
+{
+  "text": "I was charged twice for my subscription this month",
+  "context": { "categories": ["billing", "technical", "account", "other"] },
+  "locale": "en-US"
+}
+```
+
+- `text` (required) — ticket body.
+- `context` (optional) — `context.categories: string[]` overrides the
+  default taxonomy (`AI_CLASSIFY_CATEGORIES_DEFAULT`) for this call; any
+  other keys are passed to the model as extra context, not interpreted.
+- `locale` (optional).
+
+Success response (`200`):
+
+```json
+{
+  "ok": true,
+  "data": {
+    "category": "billing",
+    "confidence": 0.92,
+    "tags": ["refund", "duplicate_charge"],
+    "raw_model_output": { "model": "gpt-4o-mini", "id": "...", "finish_reason": "stop", "usage": {...} }
+  }
+}
+```
+
+`category`/`tags` come from a constrained structured-output call (OpenAI
+`response_format` JSON schema) — the model cannot return free text here, it
+either conforms to the schema or the call fails and you get an error
+envelope. `confidence` is the model's self-reported estimate (0-1); treat it
+as a routing heuristic, not a calibrated probability.
+
+### `POST /ai/rag-lookup/v1`
+
+Request:
+
+```json
+{
+  "query": "how do I reset my password",
+  "top_k": 5,
+  "filter": { "must": [{ "key": "source", "match": { "value": "kb" } }] },
+  "collection": "kb_documents"
+}
+```
+
+- `query` (required).
+- `top_k` (optional, default `AI_RAG_TOP_K_DEFAULT`, capped at `AI_RAG_TOP_K_MAX`).
+- `filter` (optional) — a [Qdrant filter](https://qdrant.tech/documentation/concepts/filtering/) object, passed through as-is.
+- `collection` (optional, **additive field, not in the original v1 spec's
+  required set** — additive optional fields don't require a version bump per
+  architecture doc §4). Defaults to `AI_RAG_COLLECTION` so single-collection
+  products never need to pass it.
+
+Success response (`200`):
+
+```json
+{ "ok": true, "data": { "matches": [ { "id": "...", "score": 0.87, "content": "...", "metadata": { "source": "kb" } } ] } }
+```
+
+Querying a collection that doesn't exist yet returns `matches: []`, not an
+error — lets a new product call this before its first ingest run.
+
+### `POST /internal/ingest/v1` (operational, not a published `family.module` interface)
+
+Populates the collection `rag-lookup` reads from. Not versioned like the two
+interfaces above — it's implementation detail of how this module keeps its
+own data store current, documented here for whoever operates ingestion
+(n8n workflow, cron, manual script), not a cross-team contract.
+
+```json
+{
+  "collection": "kb_documents",
+  "records": [
+    { "id": "kb-42", "content": "How to reset your password: ...", "metadata": { "source": "kb", "url": "..." } }
+  ]
+}
+```
+
+`id` is optional (a stable id is derived from content if omitted); re-ingesting
+the same `id`/content upserts in place rather than duplicating. `records` is
+capped at 500 per call — batch larger loads across multiple calls, or use
+the CLI below.
+
+For bulk/offline loads, use the CLI instead of the HTTP endpoint:
+
+```sh
+python -m app.ingest_cli --file kb.jsonl --collection kb_documents
+```
+
+where `kb.jsonl` is one JSON object per line matching the `records` item
+shape above. The CLI reads the same env vars as the service.
+
+### `GET /healthz` / `GET /readyz`
+
+`/healthz` — liveness, no auth, no upstream calls (used by the Docker
+healthcheck). `/readyz` — readiness, pings Qdrant; `503` if unreachable.
+
+## Error envelope
+
+Every non-success response — validation, upstream timeout/failure, auth,
+internal — uses the shared envelope from architecture doc §5:
+
+```json
+{ "ok": false, "error": { "code": "UPSTREAM_TIMEOUT", "message": "...", "interface_id": "ai.classify-ticket", "version": "v1", "correlation_id": "..." } }
+```
+
+**HTTP status codes**: `AUTH_ERROR` responses use `401` (a transport/security
+gate, not a business-logic outcome). Every other error code (`VALIDATION_ERROR`,
+`UPSTREAM_TIMEOUT`, `UPSTREAM_ERROR`, `INTERNAL_ERROR`) is returned with HTTP
+`200` — per the architecture doc's SLA note, these must come back as a
+parseable envelope so the n8n caller can branch on `ok` and route to a
+fallback/manual queue, without needing "continue on fail" node config to
+avoid a hard failure on expected error paths. **Always check `data.ok`
+first; the HTTP status alone is not sufficient to tell success from a
+handled business-logic error.**
+
+`correlation_id`: pass `X-Correlation-Id` (generated once at workflow
+ingestion, per qa.validation-and-logging.v1 §3.4) and it's threaded through
+this service's logs and echoed back in the response header/error envelope.
+If omitted, one is generated per-request.
+
+## Env vars
+
+Secrets (required, service refuses to start without them — see
+`app/config.py`): `OPENAI_API_KEY`, `AI_CLASSIFY_API_KEY`, `QDRANT_URL`, and
+`AI_QDRANT_API_KEY`. `AI_QDRANT_API_KEY` must be a short-lived, collection-scoped
+Qdrant JWT (`rw` for collections this service ingests into; `r` for query-only
+deployments). The Qdrant admin/signing key is never supplied to this service.
+
+Everything else is optional with a built-in default — see
+`infra/.env.example` for the full list (`AI_EMBEDDING_MODEL`, `AI_CHAT_MODEL`,
+`AI_RAG_COLLECTION`, `AI_CLASSIFY_CATEGORIES_DEFAULT`, etc.). Future products
+override only what they need; nothing here is NOAVIA-specific.
+
+## Local dev
+
+```sh
+python3 -m venv .venv && . .venv/bin/activate
+pip install -r requirements-dev.txt
+OPENAI_API_KEY=sk-... AI_CLASSIFY_API_KEY=dev-secret QDRANT_URL=http://localhost:6333 \
+  uvicorn app.main:app --reload --port 8080
+```
+
+Tests (mock the OpenAI/Qdrant clients — no network calls, no real keys
+needed):
+
+```sh
+pip install -r requirements-dev.txt
+pytest -q
+```
+
+## Design notes for whoever touches this next
+
+- **Structured output, not prompt-and-hope.** Classification uses OpenAI's
+  `chat.completions.parse` against a Pydantic model
+  (`app/schemas.py::_ModelClassification`), so the model is constrained to
+  emit schema-conformant JSON. If you swap to a different OpenAI-compatible
+  provider via `AI_OPENAI_BASE_URL`, confirm it supports structured outputs
+  (`response_format: json_schema`) — most modern OpenAI-compatible gateways
+  do, but not all.
+- **Point ids.** Qdrant requires point ids to be an unsigned int or a UUID;
+  arbitrary caller-supplied strings aren't valid. `ingest_service._stable_id`
+  deterministically maps any `id`/content string to a UUID via `uuid5`, so
+  re-ingesting the same source upserts in place.
+- **No collection auto-provisioning surprises.** `ensure_collection` only
+  creates a collection during ingestion (when we know the embedding
+  dimension from the batch just embedded); rag-lookup against a missing
+  collection returns empty matches rather than creating one.
+- **Extending the taxonomy or adding a new extraction field** doesn't need a
+  code change for the taxonomy (pass `context.categories`); a new *output*
+  field is a v2 (breaking) change per architecture doc §4 — ship it
+  alongside the existing `v1` routes, don't mutate this one in place.

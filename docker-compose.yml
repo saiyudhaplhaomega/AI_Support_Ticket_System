@@ -1,0 +1,163 @@
+# Reusable Docker Compose infra scaffold — implements `infra.secrets-and-network.v1`
+# (see /capability-module-architecture.md §3.3, owned by Infra & DevOps Engineer).
+#
+# Design rules this file follows:
+#   - Secrets: every credential comes from an env var interpolated at deploy time
+#     (${VAR}), sourced from a local .env (never committed — see .gitignore) or a
+#     real secret-store. Nothing sensitive is hardcoded here.
+#   - Network: all services attach to the shared private network `saas-internal`.
+#     It is NOT `internal: true` — services still need outbound internet access
+#     (OpenAI, Google Sheets, SMTP), so isolation is enforced by *not publishing
+#     host ports* on internal services, not by blocking egress.
+#   - Public exposure: only `reverse-proxy` publishes host ports (80/443). Every
+#     other service is reachable solely by its DNS name on saas-internal. If a
+#     service needs a public HTTPS route, add it to Caddyfile — never publish its
+#     port directly.
+#   - Extension: future capability modules or products add services to this file
+#     (or an override file layered with `-f`) and attach to `saas-internal` to
+#     reach n8n/Qdrant/etc. Existing service blocks should not need to change.
+#
+# Usage:
+#   cp .env.example .env   # fill in real values, keep .env out of version control
+#   docker compose up -d                                  # core stack
+#   docker compose --profile classification-service up -d # + classification service, once built
+
+networks:
+  saas-internal:
+    name: ${INFRA_NETWORK_NAME:-saas-internal}
+    driver: bridge
+
+volumes:
+  n8n_data:
+  qdrant_data:
+  classification_data:
+  caddy_data:
+  caddy_config:
+
+services:
+  # --- Public ingress: the only service allowed to publish host ports. ---
+  reverse-proxy:
+    image: caddy:2-alpine
+    container_name: saas-reverse-proxy
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    environment:
+      - N8N_PUBLIC_DOMAIN=${N8N_PUBLIC_DOMAIN}
+      - INFRA_TLS_EMAIL=${INFRA_TLS_EMAIL}
+    networks:
+      - saas-internal
+    depends_on:
+      - n8n
+
+  # --- workflow.* orchestration engine. No host ports: reached only via reverse-proxy. ---
+  n8n:
+    image: n8nio/n8n:latest
+    container_name: saas-n8n
+    restart: unless-stopped
+    expose:
+      - "5678"
+    environment:
+      - N8N_HOST=${N8N_PUBLIC_DOMAIN}
+      - N8N_PROTOCOL=https
+      - N8N_PORT=5678
+      - WEBHOOK_URL=https://${N8N_PUBLIC_DOMAIN}/
+      - N8N_BASIC_AUTH_ACTIVE=true
+      - N8N_BASIC_AUTH_USER=${N8N_BASIC_AUTH_USER}
+      - N8N_BASIC_AUTH_PASSWORD=${N8N_BASIC_AUTH_PASSWORD}
+      - N8N_ENCRYPTION_KEY=${N8N_ENCRYPTION_KEY}
+      - GENERIC_TIMEZONE=${INFRA_TIMEZONE:-UTC}
+      # ai.* module secrets — n8n's HTTP nodes consume only this service's
+      # bearer token. Qdrant credentials intentionally are NOT present here:
+      # all vector-store access goes through classification-service.
+      - AI_CLASSIFY_API_KEY=${AI_CLASSIFY_API_KEY}
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      # notify.* output nodes
+      - SMTP_HOST=${SMTP_HOST}
+      - SMTP_PORT=${SMTP_PORT}
+      - SMTP_USER=${SMTP_USER}
+      - SMTP_PASSWORD=${SMTP_PASSWORD}
+      - GOOGLE_SHEETS_CLIENT_ID=${GOOGLE_SHEETS_CLIENT_ID}
+      - GOOGLE_SHEETS_CLIENT_SECRET=${GOOGLE_SHEETS_CLIENT_SECRET}
+    volumes:
+      - n8n_data:/home/node/.n8n
+    networks:
+      - saas-internal
+    depends_on:
+      - qdrant
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:5678/healthz || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+
+  # --- ai.* vector store. Internal-only: no host ports, no reverse-proxy route. ---
+  qdrant:
+    image: qdrant/qdrant:latest
+    container_name: saas-qdrant
+    restart: unless-stopped
+    expose:
+      - "6333"
+      - "6334"
+    volumes:
+      - qdrant_data:/qdrant/storage
+    environment:
+      # The signing/admin secret stays with the data store. Consumers receive
+      # separately issued, collection-scoped JWTs only (see README).
+      - QDRANT__SERVICE__API_KEY=${QDRANT_SERVICE_API_KEY:?Set QDRANT_SERVICE_API_KEY in the deploy secret store}
+      - QDRANT__SERVICE__JWT_RBAC=true
+    networks:
+      - saas-internal
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:6333/healthz || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+
+  # --- ai.classify-ticket.v1 / ai.rag-lookup.v1 — standalone HTTP service
+  # (§7 open question resolved in favor of HTTP over an n8n sub-workflow, so
+  # non-n8n products can reuse it too). Opt-in via
+  # `--profile classification-service`; skipped by a plain `docker compose up`.
+  # n8n reaches it at http://classification-service:8080 on saas-internal,
+  # authenticating with `Authorization: Bearer $AI_CLASSIFY_API_KEY`. ---
+  classification-service:
+    profiles: ["classification-service"]
+    build:
+      context: ./services/classification
+    container_name: saas-classification-service
+    restart: unless-stopped
+    expose:
+      - "8080"
+    environment:
+      - AI_CLASSIFY_API_KEY=${AI_CLASSIFY_API_KEY}
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - QDRANT_URL=http://qdrant:6333
+      # This is a Qdrant JWT scoped to the collections this service needs;
+      # it is deliberately not injected into n8n or any other service.
+      - AI_QDRANT_API_KEY=${AI_QDRANT_API_KEY:?Set AI_QDRANT_API_KEY to the classification-service Qdrant JWT}
+      - AI_OPENAI_BASE_URL=${AI_OPENAI_BASE_URL}
+      - AI_EMBEDDING_MODEL=${AI_EMBEDDING_MODEL:-text-embedding-3-small}
+      - AI_EMBEDDING_DIMENSIONS=${AI_EMBEDDING_DIMENSIONS}
+      - AI_CHAT_MODEL=${AI_CHAT_MODEL:-gpt-4o-mini}
+      - AI_UPSTREAM_TIMEOUT_SECONDS=${AI_UPSTREAM_TIMEOUT_SECONDS:-8}
+      - AI_RAG_COLLECTION=${AI_RAG_COLLECTION:-kb_documents}
+      - AI_RAG_TOP_K_DEFAULT=${AI_RAG_TOP_K_DEFAULT:-5}
+      - AI_RAG_TOP_K_MAX=${AI_RAG_TOP_K_MAX:-50}
+      - AI_CLASSIFY_CATEGORIES_DEFAULT=${AI_CLASSIFY_CATEGORIES_DEFAULT:-billing,technical,account,feature_request,complaint,other}
+      - INFRA_LOG_LEVEL=${INFRA_LOG_LEVEL:-info}
+    volumes:
+      - classification_data:/data
+    networks:
+      - saas-internal
+    depends_on:
+      - qdrant
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request,sys; sys.exit(0) if urllib.request.urlopen('http://localhost:8080/healthz', timeout=3).status == 200 else sys.exit(1)"]
+      interval: 30s
+      timeout: 5s
+      retries: 5

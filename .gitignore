@@ -1,0 +1,29 @@
+# Real secrets — never commit. Only .env.example is tracked.
+.env
+.env.*
+!.env.example
+
+# Caddy/n8n/Qdrant runtime state when bind-mounted locally instead of via
+# named volumes (named volumes above are Docker-managed and not in this tree).
+caddy_data/
+caddy_config/
+
+# classification-service local dev/test artifacts.
+services/classification/__pycache__/
+services/classification/**/__pycache__/
+services/classification/.pytest_cache/
+services/classification/.venv/
+
+# Generated language/tool caches anywhere in the repository.
+__pycache__/
+*.py[cod]
+.pytest_cache/
+
+# Local runtime storage and database files. Docker named volumes are not in
+# this checkout; these rules also protect bind-mounted equivalents.
+data/
+storage/
+volumes/
+*.db
+*.sqlite
+*.sqlite3
