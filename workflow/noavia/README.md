@@ -1,8 +1,11 @@
 # NOAVIA ticket-processing workflow — `workflow.noavia-ticket-pipeline.v1`
 
 This is the reference consumer for the reusable SaaS-factory capability
-modules. Import `workflow.noavia-ticket-pipeline.v1.json` into n8n running on
-the SAI-4 Compose scaffold with SAI-5's classification service enabled.
+modules. The repository contains an importable n8n export and an internal
+classification service contract. Import/activation and execution in n8n have
+not been verified in this repository; see
+[`docs/noavia-offline-delivery-evidence.md`](../../docs/noavia-offline-delivery-evidence.md)
+before treating the steps below as a release procedure.
 
 ## Processing path
 
@@ -20,7 +23,7 @@ the Sheet. Delivery nodes continue into a final outcome check, which returns a
 
 ## Deploy
 
-1. From `infra/`, run `docker compose --profile classification-service up -d
+1. From the repository root, run `docker compose --profile classification-service up -d
    --build`.
 2. Import the workflow JSON into n8n.
 3. Replace each `REPLACE_WITH_N8N_CREDENTIAL_ID` by selecting a Header Auth

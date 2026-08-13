@@ -1,6 +1,6 @@
 # Capability-Module Architecture (v1)
 
-Status: proposed for approval · Owner: Automation Workflow Engineer · Consumers: RAG & AI Integration Engineer, Infra & DevOps Engineer, QA & Security Engineer
+Status: adopted for the current NOAVIA baseline · Owner: Automation Workflow Engineer · Consumers: RAG & AI Integration Engineer, Infra & DevOps Engineer, QA & Security Engineer
 
 ## 1. Purpose
 
@@ -34,15 +34,15 @@ Every module (regardless of family) exposes a contract with these five parts. Th
 - **Input**: `{ "text": string, "context"?: object, "locale"?: string }`
 - **Output (success)**: `{ "category": string, "confidence": number (0-1), "tags": string[], "raw_model_output"?: object }` — structured, never free text as the primary field
 - **Output (error)**: see shared error envelope §5
-- **Invocation**: n8n sub-workflow (`ai.classify-ticket.v1`) exposed as an `Execute Workflow` node; internally calls Qdrant + OpenAI-compatible endpoint. Consumers never call Qdrant/OpenAI directly.
-- **Secrets**: consumed via env vars injected by Infra (`AI_CLASSIFY_API_KEY`, `QDRANT_URL`) — the workflow module never sees these values, only the AI module's sub-workflow does.
+- **Invocation**: internal HTTP service at `POST /ai/classify-ticket/v1`; n8n calls it with an HTTP Request node. Consumers never call Qdrant/OpenAI directly.
+- **Secrets**: the workflow receives only `AI_CLASSIFY_API_KEY` for service authentication. The service receives its Qdrant/OpenAI configuration from Infra; neither secret values nor direct upstream credentials are exposed to the workflow.
 - **SLA**: synchronous, target < 5s p95, must return the error envelope (not throw) on timeout/model failure so the caller can route to a fallback/manual queue.
 
 ### 3.2 `ai.rag-lookup` (v1) — owned by RAG & AI Integration Engineer
 
 - **Input**: `{ "query": string, "top_k"?: number, "filter"?: object }`
 - **Output (success)**: `{ "matches": [{ "id": string, "score": number, "content": string, "metadata": object }] }`
-- **Invocation / secrets / SLA**: same pattern as 3.1.
+- **Invocation / secrets / SLA**: same pattern as 3.1, at `POST /ai/rag-lookup/v1`.
 
 ### 3.3 `infra.secrets-and-network` (v1) — owned by Infra & DevOps Engineer
 
@@ -91,6 +91,11 @@ Success responses are `{ "ok": true, "data": { ...per interface output schema...
 - QA & Security Engineer reviews every module against the §3.4 checklist before it ships.
 - Automation Workflow Engineer builds `workflow.noavia-ticket-pipeline` (v1) as the first consumer, calling `ai.classify-ticket`/`ai.rag-lookup` only through their published interfaces.
 
-## 7. Open questions for CEO / team review
+## 7. Resolved implementation decision
 
-- Confirm invocation mechanism preference for `ai.*` modules: n8n sub-workflow (`Execute Workflow` node) vs. a lightweight internal HTTP service Infra fronts. This doc defaults to sub-workflow-as-interface since everything is n8n-based, but an HTTP service would let non-n8n future products reuse the same module — worth a CEO call if that's on the near-term roadmap.
+`ai.classify-ticket.v1` and `ai.rag-lookup.v1` are implemented as an internal,
+standalone HTTP service, not n8n sub-workflows. This decision is reflected in
+`services/classification/` and lets future non-n8n consumers use the same
+versioned contracts. It is a repository implementation decision; live service
+deployment and integration remain unverified (see
+`docs/noavia-offline-delivery-evidence.md`).

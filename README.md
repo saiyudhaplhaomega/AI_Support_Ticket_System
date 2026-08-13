@@ -5,7 +5,8 @@ its first consumer, NOAVIA (n8n + Qdrant + classification). Future SaaS
 products extend the same capability-module contracts rather than duplicating
 product-specific infrastructure.
 Implements the interface contract in
-`../capability-module-architecture.md` §3.3.
+[`docs/capability-module-architecture.md`](docs/capability-module-architecture.md)
+§3.3.
 
 ## What's here
 
@@ -20,6 +21,7 @@ Implements the interface contract in
 | `scripts/` | Offline repository verification helpers; no deployment automation is included in Phase 1 |
 | `docs/` | Architecture contract and recovery provenance |
 | `docs/n8n-paperclip-api-access.md` | Approval-gated, project-isolated API access runbook for Paperclip/control-plane agents |
+| `docs/noavia-offline-delivery-evidence.md` | Offline QA evidence, remaining live-verification boundaries, and release checklist |
 
 ## Quickstart
 
@@ -64,6 +66,12 @@ docker compose run --rm --no-deps reverse-proxy caddy validate --adapter caddyfi
 ```
 
 The repository contract check can be run offline with `./scripts/verify-baseline.sh`. It asserts Qdrant authentication/RBAC, that n8n has no Qdrant credential or URL, and the exact 10 MB Caddy rule for the NOAVIA webhook. An upload greater than 10 MB receives Caddy's `413` before reaching n8n.
+
+For the separately maintained workflow QA record, run
+`python3 tests/test_noavia_workflow.py` and consult
+[`docs/noavia-offline-delivery-evidence.md`](docs/noavia-offline-delivery-evidence.md).
+Those results do not prove that the stack has been deployed or that any live
+integration works.
 
 ## Extending this for a new module or product
 
