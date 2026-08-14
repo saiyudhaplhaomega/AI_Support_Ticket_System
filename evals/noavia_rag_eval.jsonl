@@ -1,0 +1,40 @@
+{"id":"password-1","query":"How do I reset my NOAVIA password?","expected_sources":["knowledge-base/noavia/password-reset.md"],"required_concepts":["reset","password"],"expected_fallback":false}
+{"id":"password-2","query":"I forgot my passwrod and cannot sign in","expected_sources":["knowledge-base/noavia/password-reset.md"],"required_concepts":["password","sign in"],"expected_fallback":false}
+{"id":"password-3","query":"The reset link for my account expired","expected_sources":["knowledge-base/noavia/password-reset.md"],"required_concepts":["reset","link"],"expected_fallback":false}
+{"id":"password-4","query":"PDF text: user requests account password recovery","expected_sources":["knowledge-base/noavia/password-reset.md"],"required_concepts":["password","recovery"],"expected_fallback":false}
+{"id":"duplicate-1","query":"I was charged twice for my monthly subscription","expected_sources":["knowledge-base/noavia/duplicate-charge.md"],"required_concepts":["charged twice","subscription"],"expected_fallback":false}
+{"id":"duplicate-2","query":"There are two identical card debits on my invoice","expected_sources":["knowledge-base/noavia/duplicate-charge.md"],"required_concepts":["duplicate","charge"],"expected_fallback":false}
+{"id":"duplicate-3","query":"Urgent: duplicate payment after renewal; also where can I change email notifications?","expected_sources":["knowledge-base/noavia/duplicate-charge.md","knowledge-base/noavia/email-notifications.md"],"required_concepts":["duplicate","payment"],"expected_fallback":false}
+{"id":"duplicate-4","query":"My bank shows a double charge, pls help","expected_sources":["knowledge-base/noavia/duplicate-charge.md"],"required_concepts":["double","charge"],"expected_fallback":false}
+{"id":"csv-1","query":"How can I import contacts from a CSV file?","expected_sources":["knowledge-base/noavia/csv-import.md"],"required_concepts":["CSV","import"],"expected_fallback":false}
+{"id":"csv-2","query":"The csv upload says headers are invalid","expected_sources":["knowledge-base/noavia/csv-import.md"],"required_concepts":["CSV","headers"],"expected_fallback":false}
+{"id":"csv-3","query":"Can I map columns during spreadsheet import?","expected_sources":["knowledge-base/noavia/csv-import.md"],"required_concepts":["columns","import"],"expected_fallback":false}
+{"id":"csv-4","query":"PDF attachment text: comma separated file failed to upload","expected_sources":["knowledge-base/noavia/csv-import.md"],"required_concepts":["file","upload"],"expected_fallback":false}
+{"id":"retention-1","query":"How long does NOAVIA retain ticket data?","expected_sources":["knowledge-base/noavia/data-retention.md"],"required_concepts":["data","retention"],"expected_fallback":false}
+{"id":"retention-2","query":"Please delete my old support records","expected_sources":["knowledge-base/noavia/data-retention.md"],"required_concepts":["delete","records"],"expected_fallback":false}
+{"id":"retention-3","query":"What is the policy for archived customer information?","expected_sources":["knowledge-base/noavia/data-retention.md"],"required_concepts":["policy","archived"],"expected_fallback":false}
+{"id":"retention-4","query":"Data expiraton period for a closed request?","expected_sources":["knowledge-base/noavia/data-retention.md"],"required_concepts":["data","period"],"expected_fallback":false}
+{"id":"email-1","query":"How do I turn off product email notifications?","expected_sources":["knowledge-base/noavia/email-notifications.md"],"required_concepts":["email","notifications"],"expected_fallback":false}
+{"id":"email-2","query":"I am not receiving account alerts","expected_sources":["knowledge-base/noavia/email-notifications.md"],"required_concepts":["alerts","email"],"expected_fallback":false}
+{"id":"email-3","query":"Change the notification address and send frequency","expected_sources":["knowledge-base/noavia/email-notifications.md"],"required_concepts":["notification","address"],"expected_fallback":false}
+{"id":"email-4","query":"Multi-topic: notifications stopped after I changed my password","expected_sources":["knowledge-base/noavia/email-notifications.md","knowledge-base/noavia/password-reset.md"],"required_concepts":["notifications","password"],"expected_fallback":false}
+{"id":"search-1","query":"How does knowledge search find support answers?","expected_sources":["knowledge-base/noavia/knowledge-search.md"],"required_concepts":["knowledge","search"],"expected_fallback":false}
+{"id":"search-2","query":"Can I search through the help center?","expected_sources":["knowledge-base/noavia/knowledge-search.md"],"required_concepts":["search","help"],"expected_fallback":false}
+{"id":"search-3","query":"Why did the support search return no result?","expected_sources":["knowledge-base/noavia/knowledge-search.md"],"required_concepts":["search","result"],"expected_fallback":false}
+{"id":"search-4","query":"Long noisy request: hello team, after lunch I tried the internal knowledge lookup, clicked search, and need to understand result ranking please","expected_sources":["knowledge-base/noavia/knowledge-search.md"],"required_concepts":["knowledge","search"],"expected_fallback":false}
+{"id":"api-1","query":"How do I rotate an API token?","expected_sources":["knowledge-base/noavia/api-token-rotation.md"],"required_concepts":["API","token"],"expected_fallback":false}
+{"id":"api-2","query":"My access key may have leaked; revoke it","expected_sources":["knowledge-base/noavia/api-token-rotation.md"],"required_concepts":["key","revoke"],"expected_fallback":false}
+{"id":"api-3","query":"Where can I create a new integration token?","expected_sources":["knowledge-base/noavia/api-token-rotation.md"],"required_concepts":["integration","token"],"expected_fallback":false}
+{"id":"api-4","query":"tokn rotation for the API integration","expected_sources":["knowledge-base/noavia/api-token-rotation.md"],"required_concepts":["token","rotation"],"expected_fallback":false}
+{"id":"sla-1","query":"What response time applies to a critical issue?","expected_sources":["knowledge-base/noavia/priority-and-sla.md"],"required_concepts":["critical","response"],"expected_fallback":false}
+{"id":"sla-2","query":"How are high, medium, and low priority tickets routed?","expected_sources":["knowledge-base/noavia/priority-and-sla.md"],"required_concepts":["priority","route"],"expected_fallback":false}
+{"id":"sla-3","query":"This outage is urgent—what is the service level target?","expected_sources":["knowledge-base/noavia/priority-and-sla.md"],"required_concepts":["urgent","service level"],"expected_fallback":false}
+{"id":"sla-4","query":"PDF text: priority matrix lists sev one and sev two handling","expected_sources":["knowledge-base/noavia/priority-and-sla.md"],"required_concepts":["priority","handling"],"expected_fallback":false}
+{"id":"unsupported-1","query":"What is the weather on Mars tomorrow?","expected_sources":[],"required_concepts":[],"expected_fallback":true}
+{"id":"unsupported-2","query":"Write a JavaScript game for me","expected_sources":[],"required_concepts":[],"expected_fallback":true}
+{"id":"unsupported-3","query":"Can NOAVIA diagnose my medical symptoms?","expected_sources":[],"required_concepts":[],"expected_fallback":true}
+{"id":"unsupported-4","query":"Book a flight to Tokyo next Thursday","expected_sources":[],"required_concepts":[],"expected_fallback":true}
+{"id":"unsupported-5","query":"Who will win the football match?","expected_sources":[],"required_concepts":[],"expected_fallback":true}
+{"id":"unsupported-6","query":"Generate an image of a mountain","expected_sources":[],"required_concepts":[],"expected_fallback":true}
+{"id":"unsupported-7","query":"What is the capital of a fictional planet Zorb?","expected_sources":[],"required_concepts":[],"expected_fallback":true}
+{"id":"unsupported-8","query":"Tell me a joke about penguins","expected_sources":[],"required_concepts":[],"expected_fallback":true}

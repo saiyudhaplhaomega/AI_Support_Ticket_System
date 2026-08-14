@@ -160,3 +160,16 @@ services:
       interval: 30s
       timeout: 5s
       retries: 5
+
+  frontend:
+    profiles: ["frontend"]
+    build:
+      context: ./services/frontend
+    restart: unless-stopped
+    expose:
+      - "8081"
+    environment:
+      - NOAVIA_TEST_MODE=${NOAVIA_TEST_MODE:-true}
+      - NOAVIA_N8N_INTERNAL_WEBHOOK_URL=${NOAVIA_N8N_INTERNAL_WEBHOOK_URL:-}
+    networks:
+      - saas-internal

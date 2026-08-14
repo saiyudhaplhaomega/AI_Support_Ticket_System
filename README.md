@@ -21,6 +21,8 @@ Implements the interface contract in
 | `scripts/` | Offline repository verification helpers; no deployment automation is included in Phase 1 |
 | `docs/` | Architecture contract and recovery provenance |
 | `docs/n8n-paperclip-api-access.md` | Approval-gated, project-isolated API access runbook for Paperclip/control-plane agents |
+| `services/frontend/` | Test-mode support form and server-side private submission boundary |
+| `evals/noavia_rag_eval.py` | Credential-free 40-case local RAG evaluation |
 | `docs/noavia-offline-delivery-evidence.md` | Offline QA evidence, remaining live-verification boundaries, and release checklist |
 
 ## Quickstart
@@ -66,6 +68,20 @@ docker compose run --rm --no-deps reverse-proxy caddy validate --adapter caddyfi
 ```
 
 The repository contract check can be run offline with `./scripts/verify-baseline.sh`. It asserts Qdrant authentication/RBAC, that n8n has no Qdrant credential or URL, and the exact 10 MB Caddy rule for the NOAVIA webhook. An upload greater than 10 MB receives Caddy's `413` before reaching n8n.
+
+## NOAVIA test portal
+
+Run `docker compose --profile frontend up --build`, then use the internal
+frontend service through the reverse-proxy route configured by the deployer.
+`NOAVIA_TEST_MODE=true` is the default: the form validates name, email, subject,
+message, and an optional PDF, returns a dummy success result, and makes no
+n8n, Google Sheets, or Gmail request. Browser code contains no webhook URL or
+credential. Only an owner-approved controlled test may set the private
+`NOAVIA_N8N_INTERNAL_WEBHOOK_URL` and disable test mode; the workflow stays
+inactive until that approval.
+
+For RAG baseline measurement run `python3 evals/noavia_rag_eval.py`; see
+`docs/noavia-rag-evaluation.md` for committed metrics and limitations.
 
 For the separately maintained workflow QA record, run
 `python3 tests/test_noavia_workflow.py` and consult
