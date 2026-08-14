@@ -12,10 +12,18 @@ and makes no claim beyond what those source records already establish.
 ## 1. GitHub / remote verification
 
 - Canonical repository: `saiyudhaplhaomega/AI_Support_Ticket_System`.
-- Local `main` and `origin/main` both resolve to `83586bd371b530e6e63fe1677610d065b3991ddb`
+- `origin/main` resolves to `83586bd371b530e6e63fe1677610d065b3991ddb`
   (`fix(noavia): correct RAG median bug and stale audit metric (SAI-52)`),
-  confirmed via `git fetch origin main` in this review — branch is up to
-  date, working tree clean except this report.
+  confirmed via `git fetch origin main` in this review.
+- Local `main` is one commit ahead (this report, `docs(noavia): add
+  consolidated SAI-27 final report and QA review`). `git push origin main`
+  fails in this runtime with "could not read Username for 'https://github.com'"
+  — no GitHub push credential is available to this execution environment.
+  This is a known, owner-acknowledged limitation (see accepted confirmation
+  `2409c03f-24f6-4bfd-8278-6f9c476b4712`, 2026-08-14T00:48:59Z), not a new
+  defect. The commit contains no code change — docs only — and is preserved
+  in the canonical project workspace pending a push-capable run or an owner-
+  supplied credential.
 - Tracked-file secret scan (`sk-`, AWS `AKIA`, Slack `xox`, PEM private-key
   headers) over every `git ls-files` entry: no match. `.env` is not tracked
   and is git-ignored (`git check-ignore -v .env` confirms).
