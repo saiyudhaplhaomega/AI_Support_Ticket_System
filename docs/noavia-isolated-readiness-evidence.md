@@ -84,9 +84,14 @@ PASS: 26 nodes; validation envelope, audit telemetry, fallbacks, and delivery co
 
 ## Remaining owner / platform actions
 
-1. **Remote verification**: `origin/main` was independently verified at
-   `780c16ec3badbc81ab132c35712087be24b11b3e` on 2026-08-14. This readiness
-   record describes that published tip; no local-only release commit remains.
+1. **Publish the QA remediation**: `origin/main` was independently verified at
+   `780c16ec3badbc81ab132c35712087be24b11b3e` on 2026-08-14. The current
+   local release tip is `528e34a982017f2f9de283b0fc3de144f1b61383`
+   (`fix(qa): sanitize Qdrant ingestion errors`), which adds a regression test
+   and removes provider exception text from the ingestion error envelope.
+   This runtime has no GitHub authentication, so an owner or CI identity with
+   repository push permission must publish that commit and verify that local
+   `HEAD` and `origin/main` resolve to the same SHA.
 2. **OpenAI upgrade** (optional for production): Replace `DeterministicHashEmbedder`
    with OpenAI `text-embedding-3-small` by injecting `OPENAI_API_KEY` into
    the classification service only (do not inject it into n8n). Re-ingest `knowledge-base/noavia` via the service
