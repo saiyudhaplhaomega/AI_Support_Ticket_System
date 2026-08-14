@@ -85,10 +85,12 @@ PASS: 26 nodes; validation envelope, audit telemetry, fallbacks, and delivery co
 ## Remaining owner / platform actions
 
 1. **Publish the QA remediation**: `origin/main` was independently verified at
-   `780c16ec3badbc81ab132c35712087be24b11b3e` on 2026-08-14. The current
-   local release tip is `528e34a982017f2f9de283b0fc3de144f1b61383`
-   (`fix(qa): sanitize Qdrant ingestion errors`), which adds a regression test
-   and removes provider exception text from the ingestion error envelope.
+   `780c16ec3badbc81ab132c35712087be24b11b3e` on 2026-08-14. The reviewed
+   local QA remediation is `43799c0` (which includes
+   `528e34a982017f2f9de283b0fc3de144f1b61383`,
+   `fix(qa): sanitize Qdrant ingestion errors`). The remediation adds a
+   regression test and removes provider exception text from the ingestion
+   error envelope.
    This runtime has no GitHub authentication, so an owner or CI identity with
    repository push permission must publish that commit and verify that local
    `HEAD` and `origin/main` resolve to the same SHA.
