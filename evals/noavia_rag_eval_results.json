@@ -1,0 +1,871 @@
+{
+  "metrics": {
+    "case_count": 40,
+    "recall_at_3": 1.0,
+    "top_1_accuracy": 0.9375,
+    "mrr": 0.96875,
+    "unsupported_fallback_accuracy": 1.0,
+    "false_confidence_cases": [],
+    "supported_top_score_mean": 0.283599970182763,
+    "unsupported_top_score_mean": 0.0,
+    "threshold": 0.1
+  },
+  "cases": [
+    {
+      "id": "password-1",
+      "query": "I forgot my NOAVIA password. How do I reset it?",
+      "expected_source_filenames": [
+        "password-reset.md"
+      ],
+      "required_concepts": [
+        "reset",
+        "password"
+      ],
+      "expected_fallback": false,
+      "returned_sources": [
+        "password-reset.md",
+        "email-notifications.md",
+        "duplicate-charge.md"
+      ],
+      "scores": [
+        0.39019514637198177,
+        0.15097027121927944,
+        0.14433756729740646
+      ],
+      "fallback": false,
+      "rank": 1
+    },
+    {
+      "id": "password-2",
+      "query": "reset link expired after I requested a new passwrod",
+      "expected_source_filenames": [
+        "password-reset.md"
+      ],
+      "required_concepts": [
+        "reset",
+        "expired"
+      ],
+      "expected_fallback": false,
+      "returned_sources": [
+        "password-reset.md",
+        "email-notifications.md",
+        "priority-and-sla.md"
+      ],
+      "scores": [
+        0.333462008626037,
+        0.1397713115629224,
+        0.08620832027071171
+      ],
+      "fallback": false,
+      "rank": 1
+    },
+    {
+      "id": "password-3",
+      "query": "Long ticket: hello team, I changed laptops and cannot sign in. Please explain the password reset email process. Thanks.",
+      "expected_source_filenames": [
+        "password-reset.md"
+      ],
+      "required_concepts": [
+        "password",
+        "email"
+      ],
+      "expected_fallback": false,
+      "returned_sources": [
+        "password-reset.md",
+        "data-retention.md",
+        "knowledge-search.md"
+      ],
+      "scores": [
+        0.2853051806485968,
+        0.22388451277865903,
+        0.25437350953458415
+      ],
+      "fallback": false,
+      "rank": 1
+    },
+    {
+      "id": "password-4",
+      "query": "My attachment says the password reset token is invalid; also the dashboard is slow.",
+      "expected_source_filenames": [
+        "password-reset.md"
+      ],
+      "required_concepts": [
+        "reset",
+        "token"
+      ],
+      "expected_fallback": false,
+      "returned_sources": [
+        "password-reset.md",
+        "api-token-rotation.md",
+        "knowledge-search.md"
+      ],
+      "scores": [
+        0.19605723255834873,
+        0.15474611514754322,
+        0.09534625892455922
+      ],
+      "fallback": false,
+      "rank": 1
+    },
+    {
+      "id": "csv-1",
+      "query": "How do I import a CSV of contacts into NOAVIA?",
+      "expected_source_filenames": [
+        "csv-import.md"
+      ],
+      "required_concepts": [
+        "CSV",
+        "import"
+      ],
+      "expected_fallback": false,
+      "returned_sources": [
+        "csv-import.md",
+        "password-reset.md",
+        "data-retention.md"
+      ],
+      "scores": [
+        0.181848241863327,
+        0.1667310043130185,
+        0.15859036992388778
+      ],
+      "fallback": false,
+      "rank": 1
+    },
+    {
+      "id": "csv-2",
+      "query": "csv upload keeps rejecting columns and headers",
+      "expected_source_filenames": [
+        "csv-import.md"
+      ],
+      "required_concepts": [
+        "CSV",
+        "headers"
+      ],
+      "expected_fallback": false,
+      "returned_sources": [
+        "csv-import.md",
+        "data-retention.md",
+        "api-token-rotation.md"
+      ],
+      "scores": [
+        0.23570226039551587,
+        0.10277830647412976,
+        0.07580980435789035
+      ],
+      "fallback": false,
+      "rank": 1
+    },
+    {
+      "id": "csv-3",
+      "query": "We need to bring 3,000 leads from a spreadsheet; what CSV format is accepted?",
+      "expected_source_filenames": [
+        "csv-import.md"
+      ],
+      "required_concepts": [
+        "CSV",
+        "format"
+      ],
+      "expected_fallback": false,
+      "returned_sources": [
+        "csv-import.md",
+        "data-retention.md",
+        "priority-and-sla.md"
+      ],
+      "scores": [
+        0.26111648393354675,
+        0.202418159747703,
+        0.22923483038557266
+      ],
+      "fallback": false,
+      "rank": 1
+    },
+    {
+      "id": "csv-4",
+      "query": "PDF note: the CSV import failed because an email column has duplicates.",
+      "expected_source_filenames": [
+        "csv-import.md"
+      ],
+      "required_concepts": [
+        "CSV",
+        "duplicate"
+      ],
+      "expected_fallback": false,
+      "returned_sources": [
+        "csv-import.md",
+        "password-reset.md",
+        "priority-and-sla.md"
+      ],
+      "scores": [
+        0.24343224778007383,
+        0.3022438607339301,
+        0.12021175920858626
+      ],
+      "fallback": false,
+      "rank": 1
+    },
+    {
+      "id": "charge-1",
+      "query": "I was charged twice for my subscription this month.",
+      "expected_source_filenames": [
+        "duplicate-charge.md"
+      ],
+      "required_concepts": [
+        "charged",
+        "twice"
+      ],
+      "expected_fallback": false,
+      "returned_sources": [
+        "duplicate-charge.md",
+        "csv-import.md",
+        "knowledge-search.md"
+      ],
+      "scores": [
+        0.1976423537605237,
+        0.04303314829119352,
+        0.04264014327112209
+      ],
+      "fallback": false,
+      "rank": 1
+    },
+    {
+      "id": "charge-2",
+      "query": "duplicate invoice payment, please help with a refund",
+      "expected_source_filenames": [
+        "duplicate-charge.md"
+      ],
+      "required_concepts": [
+        "duplicate",
+        "refund"
+      ],
+      "expected_fallback": false,
+      "returned_sources": [
+        "duplicate-charge.md",
+        "data-retention.md",
+        "email-notifications.md"
+      ],
+      "scores": [
+        0.43301270189221935,
+        0.2398160484396361,
+        0.1887128390240993
+      ],
+      "fallback": false,
+      "rank": 1
+    },
+    {
+      "id": "charge-3",
+      "query": "Urgent: card shows two NOAVIA transactions for the same order.",
+      "expected_source_filenames": [
+        "duplicate-charge.md"
+      ],
+      "required_concepts": [
+        "two",
+        "transactions"
+      ],
+      "expected_fallback": false,
+      "returned_sources": [
+        "duplicate-charge.md",
+        "priority-and-sla.md",
+        "email-notifications.md"
+      ],
+      "scores": [
+        0.22360679774997896,
+        0.21638116657545525,
+        0.14617633655117152
+      ],
+      "fallback": false,
+      "rank": 1
+    },
+    {
+      "id": "charge-4",
+      "query": "Noisy message blah blah. I see a duplicated charge and need the billing policy.",
+      "expected_source_filenames": [
+        "duplicate-charge.md"
+      ],
+      "required_concepts": [
+        "duplicate",
+        "charge"
+      ],
+      "expected_fallback": false,
+      "returned_sources": [
+        "duplicate-charge.md",
+        "email-notifications.md",
+        "knowledge-search.md"
+      ],
+      "scores": [
+        0.22963966338592295,
+        0.2401922307076307,
+        0.19266865889711315
+      ],
+      "fallback": false,
+      "rank": 1
+    },
+    {
+      "id": "token-1",
+      "query": "How can I rotate an API token?",
+      "expected_source_filenames": [
+        "api-token-rotation.md"
+      ],
+      "required_concepts": [
+        "API",
+        "token"
+      ],
+      "expected_fallback": false,
+      "returned_sources": [
+        "api-token-rotation.md",
+        "knowledge-search.md",
+        "email-notifications.md"
+      ],
+      "scores": [
+        0.31583808285461834,
+        0.14414999403128942,
+        0.1397713115629224
+      ],
+      "fallback": false,
+      "rank": 1
+    },
+    {
+      "id": "token-2",
+      "query": "I accidentally exposed my api key and need to revoke it.",
+      "expected_source_filenames": [
+        "api-token-rotation.md"
+      ],
+      "required_concepts": [
+        "revoke",
+        "token"
+      ],
+      "expected_fallback": false,
+      "returned_sources": [
+        "api-token-rotation.md",
+        "password-reset.md",
+        "knowledge-search.md"
+      ],
+      "scores": [
+        0.34114411961050656,
+        0.2401200900750657,
+        0.19462473604038077
+      ],
+      "fallback": false,
+      "rank": 1
+    },
+    {
+      "id": "token-3",
+      "query": "Does creating a replacement access token disable the old token?",
+      "expected_source_filenames": [
+        "api-token-rotation.md"
+      ],
+      "required_concepts": [
+        "token",
+        "replace"
+      ],
+      "expected_fallback": false,
+      "returned_sources": [
+        "api-token-rotation.md",
+        "csv-import.md",
+        "knowledge-search.md"
+      ],
+      "scores": [
+        0.35233213170882205,
+        0.12171612389003693,
+        0.12060453783110546
+      ],
+      "fallback": false,
+      "rank": 1
+    },
+    {
+      "id": "token-4",
+      "query": "PDF extracted text: security asks for the integration token rotation procedure.",
+      "expected_source_filenames": [
+        "api-token-rotation.md"
+      ],
+      "required_concepts": [
+        "integration",
+        "token"
+      ],
+      "expected_fallback": false,
+      "returned_sources": [
+        "api-token-rotation.md",
+        "csv-import.md",
+        "priority-and-sla.md"
+      ],
+      "scores": [
+        0.40233989938361236,
+        0.19245008972987523,
+        0.1520571842539411
+      ],
+      "fallback": false,
+      "rank": 1
+    },
+    {
+      "id": "search-1",
+      "query": "Where can I search our knowledge base?",
+      "expected_source_filenames": [
+        "knowledge-search.md"
+      ],
+      "required_concepts": [
+        "knowledge",
+        "search"
+      ],
+      "expected_fallback": false,
+      "returned_sources": [
+        "knowledge-search.md",
+        "data-retention.md",
+        "email-notifications.md"
+      ],
+      "scores": [
+        0.3503245248726854,
+        0.17129717745688294,
+        0.15097027121927944
+      ],
+      "fallback": false,
+      "rank": 1
+    },
+    {
+      "id": "search-2",
+      "query": "search results do not find an article I know exists",
+      "expected_source_filenames": [
+        "knowledge-search.md"
+      ],
+      "required_concepts": [
+        "search",
+        "article"
+      ],
+      "expected_fallback": false,
+      "returned_sources": [
+        "knowledge-search.md",
+        "email-notifications.md",
+        "data-retention.md"
+      ],
+      "scores": [
+        0.337099931231621,
+        0.22880215766121467,
+        0.14834770727423166
+      ],
+      "fallback": false,
+      "rank": 1
+    },
+    {
+      "id": "search-3",
+      "query": "Can I filter the help center results by category?",
+      "expected_source_filenames": [
+        "knowledge-search.md"
+      ],
+      "required_concepts": [
+        "filter",
+        "search"
+      ],
+      "expected_fallback": false,
+      "returned_sources": [
+        "knowledge-search.md",
+        "email-notifications.md",
+        "data-retention.md"
+      ],
+      "scores": [
+        0.14414999403128942,
+        0.24459979523511421,
+        0.15859036992388778
+      ],
+      "fallback": false,
+      "rank": 1
+    },
+    {
+      "id": "search-4",
+      "query": "Long report: I typed a query in the knowledge search and got no matching documentation.",
+      "expected_source_filenames": [
+        "knowledge-search.md"
+      ],
+      "required_concepts": [
+        "knowledge",
+        "query"
+      ],
+      "expected_fallback": false,
+      "returned_sources": [
+        "knowledge-search.md",
+        "data-retention.md",
+        "priority-and-sla.md"
+      ],
+      "scores": [
+        0.2713602101199873,
+        0.21229795697371012,
+        0.192338814733738
+      ],
+      "fallback": false,
+      "rank": 1
+    },
+    {
+      "id": "sla-1",
+      "query": "What is the response time for a critical support ticket?",
+      "expected_source_filenames": [
+        "priority-and-sla.md"
+      ],
+      "required_concepts": [
+        "critical",
+        "response"
+      ],
+      "expected_fallback": false,
+      "returned_sources": [
+        "priority-and-sla.md",
+        "data-retention.md",
+        "duplicate-charge.md"
+      ],
+      "scores": [
+        0.3103854276221005,
+        0.17129717745688294,
+        0.2525907427704613
+      ],
+      "fallback": false,
+      "rank": 1
+    },
+    {
+      "id": "sla-2",
+      "query": "Please explain P2 ticket priority and initial response target.",
+      "expected_source_filenames": [
+        "priority-and-sla.md"
+      ],
+      "required_concepts": [
+        "P2",
+        "response"
+      ],
+      "expected_fallback": false,
+      "returned_sources": [
+        "priority-and-sla.md",
+        "api-token-rotation.md",
+        "duplicate-charge.md"
+      ],
+      "scores": [
+        0.3494421648708057,
+        0.29543947393437575,
+        0.28124999999999994
+      ],
+      "fallback": false,
+      "rank": 1
+    },
+    {
+      "id": "sla-3",
+      "query": "Is this medium urgency issue handled before low urgency tickets?",
+      "expected_source_filenames": [
+        "priority-and-sla.md"
+      ],
+      "required_concepts": [
+        "medium",
+        "low"
+      ],
+      "expected_fallback": false,
+      "returned_sources": [
+        "priority-and-sla.md",
+        "csv-import.md",
+        "password-reset.md"
+      ],
+      "scores": [
+        0.2521583134241299,
+        0.14506471329641488,
+        0.15517288448251543
+      ],
+      "fallback": false,
+      "rank": 1
+    },
+    {
+      "id": "sla-4",
+      "query": "Our service is down!!!! which severity and support response target applies?",
+      "expected_source_filenames": [
+        "priority-and-sla.md"
+      ],
+      "required_concepts": [
+        "severity",
+        "response"
+      ],
+      "expected_fallback": false,
+      "returned_sources": [
+        "priority-and-sla.md",
+        "duplicate-charge.md",
+        "knowledge-search.md"
+      ],
+      "scores": [
+        0.10137145616929406,
+        0.20623947784607632,
+        0.09534625892455922
+      ],
+      "fallback": false,
+      "rank": 1
+    },
+    {
+      "id": "email-1",
+      "query": "Can NOAVIA send email notifications for ticket updates?",
+      "expected_source_filenames": [
+        "email-notifications.md"
+      ],
+      "required_concepts": [
+        "email",
+        "notifications"
+      ],
+      "expected_fallback": false,
+      "returned_sources": [
+        "email-notifications.md",
+        "password-reset.md",
+        "priority-and-sla.md"
+      ],
+      "scores": [
+        0.38437110679803665,
+        0.333462008626037,
+        0.34483328108284683
+      ],
+      "fallback": false,
+      "rank": 1
+    },
+    {
+      "id": "email-2",
+      "query": "I did not receive the support notification email.",
+      "expected_source_filenames": [
+        "email-notifications.md"
+      ],
+      "required_concepts": [
+        "email",
+        "notification"
+      ],
+      "expected_fallback": false,
+      "returned_sources": [
+        "password-reset.md",
+        "email-notifications.md",
+        "duplicate-charge.md"
+      ],
+      "scores": [
+        0.3001501125938321,
+        0.264197974633739,
+        0.2525907427704613
+      ],
+      "fallback": false,
+      "rank": 2
+    },
+    {
+      "id": "email-3",
+      "query": "How do I change notification preferences?",
+      "expected_source_filenames": [
+        "email-notifications.md"
+      ],
+      "required_concepts": [
+        "notification",
+        "preferences"
+      ],
+      "expected_fallback": false,
+      "returned_sources": [
+        "email-notifications.md",
+        "duplicate-charge.md",
+        "data-retention.md"
+      ],
+      "scores": [
+        0.24806946917841688,
+        0.15811388300841894,
+        0.18764665626020038
+      ],
+      "fallback": false,
+      "rank": 1
+    },
+    {
+      "id": "email-4",
+      "query": "PDF says mailbox blocked a NOAVIA ticket alert; what does the email policy say?",
+      "expected_source_filenames": [
+        "email-notifications.md"
+      ],
+      "required_concepts": [
+        "email",
+        "alert"
+      ],
+      "expected_fallback": false,
+      "returned_sources": [
+        "email-notifications.md",
+        "priority-and-sla.md",
+        "data-retention.md"
+      ],
+      "scores": [
+        0.18681617943926834,
+        0.24142320471838097,
+        0.19380063324460373
+      ],
+      "fallback": false,
+      "rank": 1
+    },
+    {
+      "id": "retention-1",
+      "query": "How long does NOAVIA keep support ticket data?",
+      "expected_source_filenames": [
+        "data-retention.md"
+      ],
+      "required_concepts": [
+        "retain",
+        "data"
+      ],
+      "expected_fallback": false,
+      "returned_sources": [
+        "priority-and-sla.md",
+        "data-retention.md",
+        "csv-import.md"
+      ],
+      "scores": [
+        0.2956818318137586,
+        0.23735633163877065,
+        0.2041241452319315
+      ],
+      "fallback": false,
+      "rank": 2
+    },
+    {
+      "id": "retention-2",
+      "query": "Please delete my account records under the retention policy.",
+      "expected_source_filenames": [
+        "data-retention.md"
+      ],
+      "required_concepts": [
+        "delete",
+        "retention"
+      ],
+      "expected_fallback": false,
+      "returned_sources": [
+        "data-retention.md",
+        "api-token-rotation.md",
+        "csv-import.md"
+      ],
+      "scores": [
+        0.12687229593911023,
+        0.14037248126871926,
+        0.10910894511799618
+      ],
+      "fallback": false,
+      "rank": 1
+    },
+    {
+      "id": "retention-3",
+      "query": "What happens after I delete a ticket from the workspace?",
+      "expected_source_filenames": [
+        "data-retention.md"
+      ],
+      "required_concepts": [
+        "delete",
+        "ticket"
+      ],
+      "expected_fallback": false,
+      "returned_sources": [
+        "data-retention.md",
+        "priority-and-sla.md",
+        "api-token-rotation.md"
+      ],
+      "scores": [
+        0.3488988138325531,
+        0.28736106756903906,
+        0.31583808285461834
+      ],
+      "fallback": false,
+      "rank": 1
+    },
+    {
+      "id": "retention-4",
+      "query": "Need a CSV export and the ticket retention period.",
+      "expected_source_filenames": [
+        "data-retention.md"
+      ],
+      "required_concepts": [
+        "CSV",
+        "retention"
+      ],
+      "expected_fallback": false,
+      "returned_sources": [
+        "data-retention.md",
+        "csv-import.md",
+        "duplicate-charge.md"
+      ],
+      "scores": [
+        0.44537266138789566,
+        0.23570226039551587,
+        0.2165063509461097
+      ],
+      "fallback": false,
+      "rank": 1
+    },
+    {
+      "id": "unsupported-1",
+      "query": "Can you predict tomorrow's stock market?",
+      "expected_source_filenames": [],
+      "required_concepts": [],
+      "expected_fallback": true,
+      "returned_sources": [],
+      "scores": [],
+      "fallback": true,
+      "rank": null
+    },
+    {
+      "id": "unsupported-2",
+      "query": "Write a poem about a lighthouse.",
+      "expected_source_filenames": [],
+      "required_concepts": [],
+      "expected_fallback": true,
+      "returned_sources": [],
+      "scores": [],
+      "fallback": true,
+      "rank": null
+    },
+    {
+      "id": "unsupported-3",
+      "query": "What restaurant should I visit in Paris?",
+      "expected_source_filenames": [],
+      "required_concepts": [],
+      "expected_fallback": true,
+      "returned_sources": [],
+      "scores": [],
+      "fallback": true,
+      "rank": null
+    },
+    {
+      "id": "unsupported-4",
+      "query": "How do I bake sourdough bread?",
+      "expected_source_filenames": [],
+      "required_concepts": [],
+      "expected_fallback": true,
+      "returned_sources": [],
+      "scores": [],
+      "fallback": true,
+      "rank": null
+    },
+    {
+      "id": "unsupported-5",
+      "query": "Explain quantum entanglement for children.",
+      "expected_source_filenames": [],
+      "required_concepts": [],
+      "expected_fallback": true,
+      "returned_sources": [],
+      "scores": [],
+      "fallback": true,
+      "rank": null
+    },
+    {
+      "id": "unsupported-6",
+      "query": "What is the weather next week?",
+      "expected_source_filenames": [],
+      "required_concepts": [],
+      "expected_fallback": true,
+      "returned_sources": [],
+      "scores": [],
+      "fallback": true,
+      "rank": null
+    },
+    {
+      "id": "unsupported-7",
+      "query": "Please generate a legal contract for my house sale.",
+      "expected_source_filenames": [],
+      "required_concepts": [],
+      "expected_fallback": true,
+      "returned_sources": [],
+      "scores": [],
+      "fallback": true,
+      "rank": null
+    },
+    {
+      "id": "unsupported-8",
+      "query": "My printer is jammed, which replacement ink should I buy?",
+      "expected_source_filenames": [],
+      "required_concepts": [],
+      "expected_fallback": true,
+      "returned_sources": [],
+      "scores": [],
+      "fallback": true,
+      "rank": null
+    }
+  ]
+}

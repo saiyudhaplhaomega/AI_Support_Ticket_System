@@ -145,13 +145,22 @@ def retrieve(query: str, embedder: Embedder, store: VectorStore, *, top_k: int =
     if not -1.0 <= threshold <= 1.0:
         raise ValueError("threshold must be between -1 and 1")
     matches = store.search(embedder.embed(query), top_k)
-    if not matches or matches[0].score < threshold:
+    # The hash embedding can collide on unrelated short queries.  A tiny
+    # lexical grounding check/rerank is applied only after the vector baseline
+    # was measured; it keeps every returned citation tied to query vocabulary.
+    query_tokens = set(_tokens(query))
+    matches = sorted(matches, key=lambda item: (-(_lexical_overlap(query_tokens, item.content)), -item.score, item.id))
+    if not matches or matches[0].score < threshold or (threshold > 0 and _lexical_overlap(query_tokens, matches[0].content) < 2):
         return RetrievalResult(matches=[], low_confidence=True, fallback="manual_review")
     return RetrievalResult(matches=matches, low_confidence=False, fallback=None)
 
 
 def _tokens(text: str) -> list[str]:
     return [token for token in _TOKEN_RE.findall(text.lower()) if token not in _STOP_WORDS]
+
+
+def _lexical_overlap(query_tokens: set[str], content: str) -> int:
+    return len(query_tokens.intersection(_tokens(content)))
 
 
 def _source_path(path: Path) -> str:

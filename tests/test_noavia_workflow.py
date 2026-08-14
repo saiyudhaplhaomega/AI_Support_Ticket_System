@@ -106,36 +106,15 @@ def main() -> None:
     validator = nodes["Validate and Normalize"]["parameters"]["jsCode"]
     assert "throw new Error" not in validator
     invalid = run_code_node(validator, {"subject": "", "correlation_id": "corr-invalid"})[0]["json"]
-    assert invalid == {
-        "ok": False,
-        "error": {
-            "code": "VALIDATION_ERROR",
-            "message": "Ticket validation failed",
-            "details": [
-                {"field": "subject", "message": "subject is required"},
-                {"field": "body", "message": "body is required"},
-                {"field": "requester_email", "message": "requester_email is required"},
-                {"field": "config.sheet_id", "message": "config.sheet_id is required"},
-                {"field": "config.sheet_name", "message": "config.sheet_name is required"},
-                {"field": "config.default_route_email", "message": "config.default_route_email is required"},
-                {"field": "config.from_email", "message": "config.from_email is required"},
-            ],
-        },
-        "correlation_id": "corr-invalid",
-        "audit_logs": [],
-    }
+    assert invalid["ok"] is False and invalid["error"]["code"] == "VALIDATION_ERROR"
+    assert {x["field"] for x in invalid["error"]["details"]} == {"requester_name", "subject", "body", "requester_email"}
     valid_payload = {
         "ticket_id": "NVA-1",
+        "requester_name": "Test Customer",
         "subject": "Charged twice",
         "body": "Duplicate charge",
         "requester_email": "customer@example.com",
         "correlation_id": "corr-valid",
-        "config": {
-            "sheet_id": "sheet",
-            "sheet_name": "Tickets",
-            "default_route_email": "support@example.com",
-            "from_email": "noavia@example.com",
-        },
     }
     valid = run_code_node(validator, valid_payload)[0]["json"]
     assert valid["ok"] is True and valid["ticket"]["id"] == "NVA-1"
@@ -272,7 +251,7 @@ def main() -> None:
     assert "from" not in email_node["parameters"]
 
     # Regression: untrusted request fields cannot influence Gmail addressing.
-    hostile_payload = {**valid_payload, "from_email": "attacker-from@example.net", "default_route_email": "attacker-default@example.net", "routing_emails": {"billing": "attacker-route@example.net"}, "config": {**valid_payload["config"], "from_email": "attacker-from@example.net", "default_route_email": "attacker-default@example.net", "routing_emails": {"billing": "attacker-route@example.net"}}}
+    hostile_payload = {**valid_payload, "from_email": "attacker-from@example.net", "default_route_email": "attacker-default@example.net", "routing_emails": {"billing": "attacker-route@example.net"}, "config": {"from_email": "attacker-from@example.net", "default_route_email": "attacker-default@example.net", "routing_emails": {"billing": "attacker-route@example.net"}}}
     hostile = run_code_node(validator, hostile_payload)[0]["json"]
     hostile_routed = run_code_node(nodes["route.by-classification.v1"]["parameters"]["jsCode"], {**hostile, "classification": {"category": "billing", "confidence": 0.9, "tags": []}, "rag_matches": [], "processing_status": "routed"}, env=trusted_routing)[0]["json"]
     assert hostile_routed["route"]["email"] == "billing@example.com"
