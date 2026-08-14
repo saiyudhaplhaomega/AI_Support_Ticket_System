@@ -24,6 +24,7 @@ Implements the interface contract in
 | `services/frontend/` | Test-mode support form and server-side private submission boundary |
 | `evals/noavia_rag_eval.py` | Credential-free 40-case local RAG evaluation |
 | `docs/noavia-offline-delivery-evidence.md` | Offline QA evidence, remaining live-verification boundaries, and release checklist |
+| `docs/noavia-final-report.md` | Consolidated SAI-27 final report: remote/workflow/Qdrant evidence, test results, owner-action checklist, credential setup steps, and independent QA & Security review |
 
 ## Quickstart
 
