@@ -184,3 +184,28 @@ def test_ingest_success(client, monkeypatch):
     assert body["data"] == {"collection": "kb_documents", "ingested": 2}
     assert len(fake_qdrant.upserted) == 1
     assert len(fake_qdrant.upserted[0]["points"]) == 2
+
+
+def test_ingest_upstream_error_never_exposes_provider_details(client, monkeypatch, caplog):
+    secret = "provider-secret-should-not-leak"
+    upstream_exc = ApiException(secret)
+    monkeypatch.setattr(main_module, "get_openai_client", lambda cfg: FakeOpenAI())
+    monkeypatch.setattr(
+        main_module,
+        "get_qdrant_client",
+        lambda cfg: FakeQdrant(collection_exists=False, upsert_exc=upstream_exc),
+    )
+
+    with caplog.at_level("ERROR"):
+        resp = client.post(
+            "/internal/ingest/v1",
+            json={"records": [{"content": "document"}]},
+            headers=AUTH,
+        )
+
+    assert resp.status_code == 200
+    body = resp.json()
+    assert body["error"]["code"] == "UPSTREAM_ERROR"
+    assert body["error"]["message"] == "Vector store upsert failed."
+    assert secret not in resp.text
+    assert secret not in caplog.text

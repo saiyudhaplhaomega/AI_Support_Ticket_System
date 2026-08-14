@@ -93,7 +93,9 @@ async def ingest_documents(
             ) from exc
         except ApiException as exc:
             raise ModuleError(
-                ErrorCode.UPSTREAM_ERROR, f"Vector store upsert failed: {exc}", interface_id=INTERFACE_ID
+                # Provider-rendered exceptions can include request details. Do not
+                # reflect or log them through the shared error envelope.
+                ErrorCode.UPSTREAM_ERROR, "Vector store upsert failed.", interface_id=INTERFACE_ID
             ) from exc
 
         total += len(batch)

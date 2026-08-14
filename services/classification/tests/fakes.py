@@ -53,10 +53,12 @@ class FakeQdrant:
         points: list | None = None,
         collection_exists: bool = True,
         query_exc: Exception | None = None,
+        upsert_exc: Exception | None = None,
     ):
         self._points = points or []
         self._exists = collection_exists
         self._query_exc = query_exc
+        self._upsert_exc = upsert_exc
         self.upserted: list[dict] = []
 
     async def collection_exists(self, name: str) -> bool:
@@ -71,6 +73,8 @@ class FakeQdrant:
         self._exists = True
 
     async def upsert(self, **kwargs) -> None:
+        if self._upsert_exc:
+            raise self._upsert_exc
         self.upserted.append(kwargs)
 
     async def get_collections(self):
