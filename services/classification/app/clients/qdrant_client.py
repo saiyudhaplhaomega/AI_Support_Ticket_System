@@ -13,7 +13,12 @@ from app.config import Settings
 
 @lru_cache(maxsize=1)
 def _cached_client(url: str, api_key: str | None, timeout: float) -> AsyncQdrantClient:
-    return AsyncQdrantClient(url=url, api_key=api_key, timeout=timeout)
+    # Do not pass an empty credential through to the SDK. This keeps the
+    # unauthenticated deployment mode genuinely header-free.
+    kwargs: dict[str, str | float] = {"url": url, "timeout": timeout}
+    if api_key:
+        kwargs["api_key"] = api_key
+    return AsyncQdrantClient(**kwargs)
 
 
 def get_qdrant_client(settings: Settings) -> AsyncQdrantClient:
