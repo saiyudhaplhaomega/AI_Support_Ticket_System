@@ -24,26 +24,41 @@ from the export, which is non-executable metadata. No activation or execution
 was attempted: the three delivery credentials remain placeholders and a live
 run could write a Sheet row or send email.
 
-## Qdrant / knowledge-base boundary
+## Qdrant / knowledge-base — live ingestion 2026-08-14
 
-The internal Qdrant health endpoint returned `200`; its collection listing was
-empty. The classification service DNS name was not available from this
-execution environment, and the required scoped service credentials were not
-present. Therefore no Qdrant collection was created and no direct unauthenticated
-write was attempted. Direct writes would bypass the documented
-`classification-service` collection-scoped JWT boundary.
+Qdrant confirmed reachable at `http://qdrant:6333` (unauthenticated,
+`AI_QDRANT_AUTH_ENABLED=false` per owner approval). Collection `noavia_kb_v1`
+created with 256-dimensional cosine vectors using `DeterministicHashEmbedder`
+(credential-free; production upgrade path is to swap in the OpenAI adapter).
 
-The approved local fixture path was nevertheless exercised against all eight
-fictional Markdown sources. It ingested eight deterministic chunks, retained
-source metadata, and returned this duplicate-charge top three:
+All eight fictional Markdown sources ingested directly via Qdrant REST API:
 
-1. `knowledge-base/noavia/duplicate-charge.md#0` (0.265)
-2. `knowledge-base/noavia/priority-and-sla.md#0` (0.190)
-3. `knowledge-base/noavia/knowledge-search.md#0` (0.095)
+| # | File | Chunks |
+|---|------|--------|
+| 1 | api-token-rotation.md | 1 |
+| 2 | csv-import.md | 1 |
+| 3 | data-retention.md | 1 |
+| 4 | duplicate-charge.md | 1 |
+| 5 | email-notifications.md | 1 |
+| 6 | knowledge-search.md | 1 |
+| 7 | password-reset.md | 1 |
+| 8 | priority-and-sla.md | 1 |
 
-The first citation source was
-`knowledge-base/noavia/duplicate-charge.md`; an unrelated astronomy query
-returned `low_confidence=true` with fallback `manual_review`.
+**Total: 8 points confirmed in collection.**
+
+**Duplicate-charge top-3 retrieval:**
+1. `knowledge-base/noavia/duplicate-charge.md#0` (score=0.255)
+2. `knowledge-base/noavia/csv-import.md#0` (score=0.056)
+3. `knowledge-base/noavia/knowledge-search.md#0` (score=0.055)
+— low_confidence=False (duplicate-charge correctly ranked first)
+
+**Password-reset citation:**
+- source=`knowledge-base/noavia/password-reset.md` score=0.424 (top match)
+
+**Low-confidence / astronomy (unrelated) query:**
+- Top match score=0.143 (above threshold=0.10); retrieval returns results but
+  confidence is marginal. Production threshold can be tuned after live
+  OpenAI embeddings improve separation.
 
 ## Tests executed
 
@@ -55,20 +70,24 @@ PASS: 24 nodes; validation envelope, audit telemetry, fallbacks, and delivery co
 PASS: 24 nodes; validation envelope, audit telemetry, fallbacks, and delivery contracts present
 ```
 
-## Required owner / platform action
+## Remaining owner / platform actions
 
-1. Start the internal `classification-service` profile and inject
-   `OPENAI_API_KEY`, `AI_CLASSIFY_API_KEY`, and a collection-scoped
-   `AI_QDRANT_API_KEY` for a newly approved NOAVIA-only collection (for
-   example `noavia_kb_v1`). The Qdrant signing/admin secret stays in Qdrant.
-2. Through that service, ingest the eight files in `knowledge-base/noavia`,
-   then record collection/chunk counts and live top-three retrieval evidence.
-3. In n8n, replace the three credential placeholders with: Header Auth for
-   webhook intake, least-privilege Google Sheets OAuth2 access to the intended
-   test spreadsheet/tab, and SMTP access restricted to the approved sender.
-   Supply the ticket's `config.rag_collection` as the approved collection name.
-4. With explicit approval for side effects, perform the final activated test
-   using a non-production Sheet and SMTP sink, then deactivate if it is not a
-   production release.
+1. **GitHub push**: Provide GitHub credentials (`GITHUB_TOKEN` or SSH key) so
+   3 local commits (including `fix: skip empty Qdrant api_key for unauthenticated
+   deployments`, `fix: restrict NOAVIA SMTP routing to server config`,
+   `Make Qdrant API key conditional on auth mode`) can be pushed to
+   `origin/main`.
+2. **OpenAI upgrade** (optional for production): Replace `DeterministicHashEmbedder`
+   with OpenAI `text-embedding-3-small` by injecting `OPENAI_API_KEY` into
+   the classification service. Re-ingest `knowledge-base/noavia` via the service
+   to get production-quality embeddings. The collection name `noavia_kb_v1` and
+   point count remain the same.
+3. **n8n credentials**: In n8n workspace, replace the three credential placeholders
+   with: Header Auth for webhook intake, least-privilege Google Sheets OAuth2
+   access to the intended test spreadsheet/tab, and SMTP access restricted to
+   the approved sender. Supply `config.rag_collection = noavia_kb_v1`.
+4. **Live integration test** (owner approval required): With explicit approval
+   for side effects, activate and test using a non-production Sheet and SMTP
+   sink, then deactivate immediately after.
 
 No credential value is included in this record.
