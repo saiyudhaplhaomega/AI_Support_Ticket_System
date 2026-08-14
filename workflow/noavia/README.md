@@ -40,14 +40,20 @@ the Sheet. Delivery nodes continue into a final outcome check, which returns a
    only this header row to the configured test sheet when explicitly enabled
    for initialization; it is not part of ticket processing.
 
-5. Activate the workflow. The endpoint is `POST /webhook/noavia/tickets/v1`.
+5. Keep the workflow inactive until the owner approves a controlled,
+   non-production delivery test. Once approved, the endpoint is
+   `POST /webhook/noavia/tickets/v1`.
 
 The AI token comes from n8n's `AI_CLASSIFY_API_KEY` environment value inside
-the two HTTP nodes. Sheet values arrive as workflow input. Internal Gmail routing is server-side only: set
-`NOAVIA_NOTIFY_ROUTE_ALLOWLIST_JSON` in n8n
-environment configuration (for example `{ "default": "support@example.com",
-"billing": "billing@example.com" }`). The workflow ignores all request mail
-fields. Keep the webhook behind Header Auth.
+the two HTTP nodes. Sheet values arrive as workflow input. Internal Gmail
+routing is server-side only: select the Gmail OAuth2 credential on
+`notify.routing-email.v1` (that authorized Gmail identity is the sender) and
+set `NOAVIA_NOTIFY_ROUTE_ALLOWLIST_JSON` in n8n environment configuration.
+For the approved test configuration, map every route—including `default` and
+`manual_review`—to the one approved sink recipient. The Gmail node's `sendTo`
+value comes only from this allow-list. It has no configurable `from` value, and
+ticket request fields cannot set either sender or recipient. Keep the webhook
+behind Header Auth.
 
 ## Input contract
 
@@ -75,8 +81,9 @@ limit is 10 MB (enforce the same body limit at the proxy/runtime in production).
 
 Required: `subject`, one of `body|message|text`, one of
 `requester_email|from|email`, and `sheet_id` and `sheet_name` under `config`.
-Unknown categories use the server-configured `default` recipient. Request fields
-`from_email`, `default_route_email`, and `routing_emails` are ignored.
+Unknown categories use the server-configured `default` recipient. Legacy request
+fields named `from_email`, `default_route_email`, and `routing_emails` are not
+used to derive Gmail sender or recipient addresses.
 
 ## Audit telemetry
 

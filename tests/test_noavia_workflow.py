@@ -222,7 +222,7 @@ def main() -> None:
         "processing_status": "routed",
         "processing_error": None,
     }
-    trusted_routing = {"NOAVIA_NOTIFY_ROUTE_ALLOWLIST_JSON": json.dumps({"default": "support@example.com", "billing": "billing@example.com", "manual_review": "support-lead@example.com"}), "NOAVIA_NOTIFY_FROM_EMAIL": "noavia@example.com"}
+    trusted_routing = {"NOAVIA_NOTIFY_ROUTE_ALLOWLIST_JSON": json.dumps({"default": "support@example.com", "billing": "billing@example.com", "manual_review": "support-lead@example.com"})}
     attached = run_code_node(nodes["Attach RAG Matches"]["parameters"]["jsCode"], {"data": {"matches": route_input["rag_matches"]}}, node_data={"Prepare RAG Lookup": route_input})[0]["json"]
     # Drafting remains an internal-only workflow value; it is never connected
     # to a customer-facing email node.
@@ -269,6 +269,7 @@ def main() -> None:
     assert email_node["type"] == "n8n-nodes-base.gmail"
     assert email_node["credentials"] == {"gmailOAuth2": {"id": "", "name": ""}}
     assert email_node["parameters"]["sendTo"] == "={{ $(\"route.by-classification.v1\").item.json.route.email }}"
+    assert "from" not in email_node["parameters"]
 
     # Regression: untrusted request fields cannot influence Gmail addressing.
     hostile_payload = {**valid_payload, "from_email": "attacker-from@example.net", "default_route_email": "attacker-default@example.net", "routing_emails": {"billing": "attacker-route@example.net"}, "config": {**valid_payload["config"], "from_email": "attacker-from@example.net", "default_route_email": "attacker-default@example.net", "routing_emails": {"billing": "attacker-route@example.net"}}}

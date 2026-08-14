@@ -5,8 +5,9 @@ deliberately unexecuted. This is a control-plane and local-fixture record, not
 a claim that Google Sheets, Gmail, OpenAI, or production Qdrant ingestion was
 tested.
 
-Repository remote verification: `origin/main` was verified at
-`e8ef9bd2daacf08a0fcbf412be036988ae78df1a` on 2026-08-14.
+Repository baseline verification: `origin/main` resolved to
+`e8ef9bd2daacf08a0fcbf412be036988ae78df1a` on 2026-08-14. This is a recorded
+baseline SHA, not an instruction to push or activate anything.
 
 ## Isolated n8n workspace — 2026-08-14
 
@@ -39,6 +40,21 @@ Google Sheets and Gmail bindings are configured but have not been executed.
 No side-effecting live test has occurred: a live run could write a Sheet row
 or send email, so these bindings remain owner-confirmed rather than
 execution-verified.
+
+### Gmail destination control
+
+`notify.routing-email.v1` is an n8n Gmail node, not an SMTP node. Its sender is
+the selected Gmail OAuth2 identity; there is no sender-address expression in
+the workflow. Its `sendTo` expression reads only `route.email`, which is built
+from the server-side `NOAVIA_NOTIFY_ROUTE_ALLOWLIST_JSON` environment value.
+Ticket fields—including `requester_email`, `from_email`, `default_route_email`,
+and `routing_emails`—must never supply the Gmail sender or recipient.
+
+For the approved offline/test configuration, every configured route must point
+to the single approved test/sink recipient (including `default` and
+`manual_review`). A missing or invalid allow-list entry produces no route email
+and must be corrected before any owner-approved execution. This rule is
+structurally tested only; Gmail has not been executed.
 
 ## Qdrant / knowledge-base — live ingestion 2026-08-14
 
@@ -99,7 +115,7 @@ PASS: 26 nodes; validation envelope, audit telemetry, fallbacks, and delivery co
    the intended test spreadsheet/tab and approved sender access. Supply
    `config.rag_collection = noavia_kb_v1`.
 3. **Live integration test** (owner approval required): With explicit approval
-   for side effects, activate and test using a non-production Sheet and SMTP
-   sink, then deactivate immediately after.
+   for side effects, activate and test using a non-production Sheet and the
+   approved Gmail test/sink recipient, then deactivate immediately after.
 
 No credential value is included in this record.

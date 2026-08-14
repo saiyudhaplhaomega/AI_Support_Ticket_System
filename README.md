@@ -42,7 +42,7 @@ public route.
    real secret-store in production — never hardcoded, never committed.
 2. **Private networking by default.** All services share the `saas-internal`
    Docker network. It is a normal bridge network (not `internal: true`) so
-   containers keep outbound internet access for OpenAI/Google/SMTP calls —
+   containers keep outbound internet access for OpenAI and Google API calls —
    isolation comes from *not publishing host ports*, not from blocking
    egress. Only `reverse-proxy` publishes `80`/`443`; every other service is
    reachable solely by DNS name (`n8n`, `qdrant`, …) on that network.

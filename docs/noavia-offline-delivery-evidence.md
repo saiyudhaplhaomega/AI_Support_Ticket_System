@@ -42,7 +42,7 @@ No live integration was attempted. In particular, this evidence does **not** pro
 - webhook/proxy Header Auth or body-limit enforcement;
 - PDF extraction from a real file;
 - classification/RAG HTTP behavior or OpenAI/Qdrant access;
-- Google Sheets writes, schema coercion, OAuth least privilege, or SMTP delivery/from-address permissions;
+- Google Sheets writes, schema coercion, OAuth least privilege, or Gmail delivery/sender permissions;
 - credential permissions or secret-store injection;
 - container, network, HTTPS, or deployment behavior; or
 - production log shipping or execution-retention behavior.
