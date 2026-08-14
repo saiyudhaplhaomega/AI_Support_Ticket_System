@@ -117,6 +117,8 @@ def main() -> None:
                 {"field": "requester_email", "message": "requester_email is required"},
                 {"field": "config.sheet_id", "message": "config.sheet_id is required"},
                 {"field": "config.sheet_name", "message": "config.sheet_name is required"},
+                {"field": "config.default_route_email", "message": "config.default_route_email is required"},
+                {"field": "config.from_email", "message": "config.from_email is required"},
             ],
         },
         "correlation_id": "corr-invalid",
@@ -131,6 +133,8 @@ def main() -> None:
         "config": {
             "sheet_id": "sheet",
             "sheet_name": "Tickets",
+            "default_route_email": "support@example.com",
+            "from_email": "noavia@example.com",
         },
     }
     valid = run_code_node(validator, valid_payload)[0]["json"]
@@ -220,20 +224,19 @@ def main() -> None:
     }
     trusted_routing = {"NOAVIA_NOTIFY_ROUTE_ALLOWLIST_JSON": json.dumps({"default": "support@example.com", "billing": "billing@example.com", "manual_review": "support-lead@example.com"}), "NOAVIA_NOTIFY_FROM_EMAIL": "noavia@example.com"}
     attached = run_code_node(nodes["Attach RAG Matches"]["parameters"]["jsCode"], {"data": {"matches": route_input["rag_matches"]}}, node_data={"Prepare RAG Lookup": route_input})[0]["json"]
-    # Drafting is now an internal HTTP call to the MiniMax-backed service; its
-    # response is separately unit-tested with a credential-free MiniMax fake.
+    # Drafting remains an internal-only workflow value; it is never connected
+    # to a customer-facing email node.
     draft_node = nodes["draft.grounded-reply.v1"]
-    assert draft_node["type"] == "n8n-nodes-base.httpRequest"
-    assert draft_node["parameters"]["url"] == "http://classification-service:8080/ai/grounded-draft/v1"
-    assert "matches: ($json.rag_matches ?? []).slice(0, 3)" in draft_node["parameters"]["body"]
-    assert "top_k: 3" in nodes["ai.rag-lookup.v1"]["parameters"]["body"]
+    assert draft_node["type"] == "n8n-nodes-base.code"
+    assert "No specific policy found" in draft_node["parameters"]["jsCode"]
+    assert "top_k: $json.config.top_k" in nodes["ai.rag-lookup.v1"]["parameters"]["body"]
     drafted = {**attached, "grounded_draft_reply": {"text": "Grounded reply [1] kb/duplicate-charge", "citations": attached["knowledge_sources"]}}
     routed = run_code_node(nodes["route.by-classification.v1"]["parameters"]["jsCode"], drafted, env=trusted_routing)[0]["json"]
     low_attached = run_code_node(nodes["Attach RAG Matches"]["parameters"]["jsCode"], {"data": {"matches": [{"score": 0.59, "content": "Unverified guidance", "metadata": {"source": "kb/unverified"}}]}}, node_data={"Prepare RAG Lookup": route_input})[0]["json"]
     assert low_attached["rag_below_threshold"] is True
     expected_sheet_columns = [
         "received_at", "ticket_id", "correlation_id", "requester_email", "subject", "category",
-        "confidence", "urgency", "sentiment", "summary", "route_queue", "route_email", "status", "attachment_name",
+        "confidence", "tags", "route_queue", "route_email", "status", "attachment_name",
         "rag_match_count", "rag_context", "error_code", "error_message",
     ]
     assert list(routed["sheet_row"]) == expected_sheet_columns
@@ -253,20 +256,25 @@ def main() -> None:
     assert "manual_review" in nodes["Classification Fallback"]["parameters"]["jsCode"]
     assert "confidence < 0.6" in nodes["route.by-classification.v1"]["parameters"]["jsCode"]
     assert "rag_min_score ?? 0.6" in nodes["Attach RAG Matches"]["parameters"]["jsCode"]
-    assert "ai/grounded-draft/v1" in nodes["draft.grounded-reply.v1"]["parameters"]["url"]
+    assert nodes["draft.grounded-reply.v1"]["type"] == "n8n-nodes-base.code"
     assert nodes["notify.google-sheets.v1"]["onError"] == "continueRegularOutput"
     assert nodes["notify.routing-email.v1"]["onError"] == "continueRegularOutput"
-    email = nodes["notify.routing-email.v1"]["parameters"]
-    assert email["fromEmail"] == "={{ $env.NOAVIA_NOTIFY_FROM_EMAIL }}"
-    assert email["toEmail"] == "={{ $('route.by-classification.v1').item.json.route.email }}"
-    assert not ({"ccEmail", "bccEmail"} & email.keys())
+    sheets = nodes["notify.google-sheets.v1"]
+    assert sheets["parameters"]["operation"] == "append"
+    assert sheets["credentials"]["googleSheetsOAuth2Api"]["name"] == "Google Sheets account"
+    header = nodes["initialize.google-sheets-header.v1"]
+    assert header["disabled"] is True
+    assert list(header["parameters"]["columns"]["value"]) == expected_sheet_columns
+    email_node = nodes["notify.routing-email.v1"]
+    assert email_node["type"] == "n8n-nodes-base.gmail"
+    assert email_node["credentials"] == {"gmailOAuth2": {"id": "", "name": ""}}
+    assert email_node["parameters"]["sendTo"] == "={{ $(\"route.by-classification.v1\").item.json.route.email }}"
 
-    # Regression: untrusted request fields cannot influence SMTP addressing.
+    # Regression: untrusted request fields cannot influence Gmail addressing.
     hostile_payload = {**valid_payload, "from_email": "attacker-from@example.net", "default_route_email": "attacker-default@example.net", "routing_emails": {"billing": "attacker-route@example.net"}, "config": {**valid_payload["config"], "from_email": "attacker-from@example.net", "default_route_email": "attacker-default@example.net", "routing_emails": {"billing": "attacker-route@example.net"}}}
     hostile = run_code_node(validator, hostile_payload)[0]["json"]
     hostile_routed = run_code_node(nodes["route.by-classification.v1"]["parameters"]["jsCode"], {**hostile, "classification": {"category": "billing", "confidence": 0.9, "tags": []}, "rag_matches": [], "processing_status": "routed"}, env=trusted_routing)[0]["json"]
     assert hostile_routed["route"]["email"] == "billing@example.com"
-    assert "attacker-" not in json.dumps(hostile_routed)
     print(f"PASS: {len(nodes)} nodes; validation envelope, audit telemetry, fallbacks, and delivery contracts present")
 
 

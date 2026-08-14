@@ -11,7 +11,7 @@ before treating the steps below as a release procedure.
 
 `authenticated webhook -> validate/normalize -> optional PDF extraction ->
 ai.classify-ticket.v1 -> ai.rag-lookup.v1 -> route.by-classification.v1 ->
-Google Sheets -> routing email`
+Google Sheets append-row -> internal Gmail notification`
 
 Both AI calls use only their published HTTP contracts and pass the same
 `X-Correlation-Id`. Validation failures branch before PDF extraction, AI calls,
@@ -26,18 +26,23 @@ the Sheet. Delivery nodes continue into a final outcome check, which returns a
 1. From the repository root, run `docker compose --profile classification-service up -d
    --build`.
 2. Import the workflow JSON into n8n.
-3. Replace each `REPLACE_WITH_N8N_CREDENTIAL_ID` by selecting a Header Auth
-   credential for ingestion, a least-privilege Google Sheets OAuth2
-   credential, and an SMTP credential.
-4. Create the destination tab with this exact header row:
+3. Select a Header Auth credential for ingestion. The NOAVIA test export has
+   its least-privilege Google Sheets OAuth2 credential bound to the storage
+   and disabled header-initialization nodes. Select the Gmail OAuth2
+   credential in the final empty Gmail dropdown before any controlled test.
+4. The destination tab must have this exact 16-column header row:
 
    `received_at,ticket_id,correlation_id,requester_email,subject,category,confidence,tags,route_queue,route_email,status,attachment_name,rag_match_count,rag_context,error_code,error_message`
+
+   The disabled `Manual Trigger - Initialize Ticket Sheet Header` path emits
+   only this header row to the configured test sheet when explicitly enabled
+   for initialization; it is not part of ticket processing.
 
 5. Activate the workflow. The endpoint is `POST /webhook/noavia/tickets/v1`.
 
 The AI token comes from n8n's `AI_CLASSIFY_API_KEY` environment value inside
-the two HTTP nodes. Sheet values arrive as workflow input. SMTP addressing is server-side only: set
-`NOAVIA_NOTIFY_FROM_EMAIL` and `NOAVIA_NOTIFY_ROUTE_ALLOWLIST_JSON` in n8n
+the two HTTP nodes. Sheet values arrive as workflow input. Internal Gmail routing is server-side only: set
+`NOAVIA_NOTIFY_ROUTE_ALLOWLIST_JSON` in n8n
 environment configuration (for example `{ "default": "support@example.com",
 "billing": "billing@example.com" }`). The workflow ignores all request mail
 fields. Keep the webhook behind Header Auth.
@@ -83,7 +88,7 @@ free-form execution errors.
 ## Verify
 
 Run `python3 tests/test_noavia_workflow.py` for credential-free structural
-checks. After deployment, send one JSON ticket, one multipart ticket with a
+checks. After final credential selection and explicit approval, send one JSON ticket, one multipart ticket with a
 small PDF, and temporarily use an invalid AI token to verify the
 `manual_review` row and email. Confirm correlation IDs match the Sheet and
 service logs.

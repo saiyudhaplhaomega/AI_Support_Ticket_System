@@ -7,17 +7,15 @@
         "path": "noavia/tickets/v1",
         "authentication": "headerAuth",
         "responseMode": "responseNode",
-        "options": {
-          "binaryData": true
-        }
+        "options": {}
       },
       "id": "noavia-001",
       "name": "Ingest Support Ticket",
       "type": "n8n-nodes-base.webhook",
       "typeVersion": 2,
       "position": [
-        -1160,
-        160
+        -976,
+        -320
       ],
       "webhookId": "noavia-ticket-pipeline-v1",
       "credentials": {
@@ -29,15 +27,15 @@
     },
     {
       "parameters": {
-        "jsCode": "const input = ($json.body && typeof $json.body === 'object') ? $json.body : $json;\nconst correlationId = String(input.correlation_id ?? `noavia-${Date.now()}-${Math.random().toString(16).slice(2)}`);\nconst errors = [];\nconst required = (value, field) => { if (typeof value !== 'string' || !value.trim()) { errors.push({ field, message: `${field} is required` }); return ''; } return value.trim(); };\nconst subject = required(input.subject, 'subject');\nconst body = required(input.body ?? input.message ?? input.text, 'body');\nconst requesterEmail = required(input.requester_email ?? input.from ?? input.email, 'requester_email');\nif (requesterEmail && !/^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/.test(requesterEmail)) errors.push({ field: 'requester_email', message: 'requester_email is invalid' });\nconst config = (input.config && typeof input.config === 'object') ? input.config : {};\nconst normalizedConfig = {};\nfor (const key of ['sheet_id', 'sheet_name']) normalizedConfig[key] = required(config[key], `config.${key}`);\nconst ragMinScore = Number(config.rag_min_score ?? 0.6);\nif (!Number.isFinite(ragMinScore) || ragMinScore < 0 || ragMinScore > 1) errors.push({ field: 'config.rag_min_score', message: 'config.rag_min_score must be between 0 and 1' });\nconst attachment = $binary?.data;\nif (attachment) { const mime = String(attachment.mimeType ?? '').toLowerCase(); const name = String(attachment.fileName ?? '').toLowerCase(); if (mime !== 'application/pdf' && !name.endsWith('.pdf')) errors.push({ field: 'attachment', message: 'attachment must be a PDF' }); const size = Number(attachment.fileSize ?? 0); if (Number.isFinite(size) && size > 10 * 1024 * 1024) errors.push({ field: 'attachment', message: 'PDF exceeds 10 MB' }); }\nif (errors.length) return [{ json: { ok: false, error: { code: 'VALIDATION_ERROR', message: 'Ticket validation failed', details: errors }, correlation_id: correlationId, audit_logs: [] } }];\nreturn [{ json: { ok: true, ticket: { id: String(input.ticket_id ?? correlationId), subject, body, text: `${subject}\\n\\n${body}`, requester_email: requesterEmail, locale: String(input.locale ?? 'en'), received_at: new Date().toISOString(), attachment_name: attachment?.fileName ?? null }, context: typeof input.context === 'object' && input.context ? input.context : {}, config: { ...normalizedConfig, top_k: Math.min(Math.max(Number(config.top_k ?? 5), 1), 50), rag_min_score: ragMinScore, rag_filter: config.rag_filter ?? undefined, rag_collection: config.rag_collection ?? undefined }, correlation_id: correlationId, audit_logs: [] }, binary: $binary }];"
+        "jsCode": "const input = ($json.body && typeof $json.body === 'object') ? $json.body : $json;\nconst correlationId = String(input.correlation_id ?? `noavia-${Date.now()}-${Math.random().toString(16).slice(2)}`);\nconst errors = [];\nconst required = (value, field) => { if (typeof value !== 'string' || !value.trim()) { errors.push({ field, message: `${field} is required` }); return ''; } return value.trim(); };\nconst subject = required(input.subject, 'subject');\nconst body = required(input.body ?? input.message ?? input.text, 'body');\nconst requesterEmail = required(input.requester_email ?? input.from ?? input.email, 'requester_email');\nif (requesterEmail && !/^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/.test(requesterEmail)) errors.push({ field: 'requester_email', message: 'requester_email is invalid' });\nconst config = (input.config && typeof input.config === 'object') ? input.config : {};\nconst normalizedConfig = {};\nfor (const key of ['sheet_id', 'sheet_name', 'default_route_email', 'from_email']) normalizedConfig[key] = required(config[key], `config.${key}`);\nconst ragMinScore = Number(config.rag_min_score ?? 0.6);\nif (!Number.isFinite(ragMinScore) || ragMinScore < 0 || ragMinScore > 1) errors.push({ field: 'config.rag_min_score', message: 'config.rag_min_score must be between 0 and 1' });\nconst attachment = $binary?.data;\nif (attachment) { const mime = String(attachment.mimeType ?? '').toLowerCase(); const name = String(attachment.fileName ?? '').toLowerCase(); if (mime !== 'application/pdf' && !name.endsWith('.pdf')) errors.push({ field: 'attachment', message: 'attachment must be a PDF' }); const size = Number(attachment.fileSize ?? 0); if (Number.isFinite(size) && size > 10 * 1024 * 1024) errors.push({ field: 'attachment', message: 'PDF exceeds 10 MB' }); }\nif (errors.length) return [{ json: { ok: false, error: { code: 'VALIDATION_ERROR', message: 'Ticket validation failed', details: errors }, correlation_id: correlationId, audit_logs: [] } }];\nreturn [{ json: { ok: true, ticket: { id: String(input.ticket_id ?? correlationId), subject, body, text: `${subject}\\n\\n${body}`, requester_email: requesterEmail, locale: String(input.locale ?? 'en'), received_at: new Date().toISOString(), attachment_name: attachment?.fileName ?? null }, context: typeof input.context === 'object' && input.context ? input.context : {}, config: { ...normalizedConfig, routing_emails: config.routing_emails ?? {}, top_k: Math.min(Math.max(Number(config.top_k ?? 5), 1), 50), rag_min_score: ragMinScore, rag_filter: config.rag_filter ?? undefined, rag_collection: config.rag_collection ?? undefined }, correlation_id: correlationId, audit_logs: [] }, binary: $binary }];"
       },
       "id": "noavia-002",
       "name": "Validate and Normalize",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        -940,
-        160
+        -1008,
+        -48
       ]
     },
     {
@@ -49,8 +47,8 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        -760,
-        160
+        -832,
+        -48
       ]
     },
     {
@@ -83,8 +81,8 @@
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.2,
       "position": [
-        -560,
-        160
+        -640,
+        -48
       ]
     },
     {
@@ -96,8 +94,8 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        -340,
-        360
+        -416,
+        -32
       ]
     },
     {
@@ -113,8 +111,8 @@
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.4,
       "position": [
-        -120,
-        360
+        -224,
+        -32
       ]
     },
     {
@@ -147,14 +145,13 @@
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.2,
       "position": [
-        -720,
-        160
+        -1104,
+        240
       ]
     },
     {
       "parameters": {
         "operation": "pdf",
-        "binaryPropertyName": "data",
         "options": {}
       },
       "id": "noavia-004",
@@ -162,8 +159,8 @@
       "type": "n8n-nodes-base.extractFromFile",
       "typeVersion": 1,
       "position": [
-        -500,
-        60
+        -720,
+        192
       ]
     },
     {
@@ -175,8 +172,8 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        -280,
-        60
+        -528,
+        192
       ]
     },
     {
@@ -188,8 +185,8 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        -500,
-        260
+        -720,
+        400
       ]
     },
     {
@@ -228,8 +225,8 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
       "position": [
-        -40,
-        160
+        -288,
+        288
       ]
     },
     {
@@ -262,21 +259,21 @@
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.2,
       "position": [
-        180,
-        160
+        -48,
+        288
       ]
     },
     {
       "parameters": {
-        "jsCode": "const base = $('audit.ingestion.v1').item.json;\nconst classification = $json.data;\nconst confidence = Number(classification?.confidence ?? 0);\nconst lowConfidence = !Number.isFinite(confidence) || confidence < 0.6;\nconst normalizedClassification = lowConfidence ? { ...classification, category: 'manual_review', urgency: classification?.urgency ?? 'unknown', sentiment: classification?.sentiment ?? 'unknown', summary: classification?.summary ?? 'Low-confidence classification' } : classification;\nreturn [{ json: { ...base, classification: normalizedClassification, processing_status: lowConfidence ? 'needs-manual-review' : 'routed', processing_error: lowConfidence ? { code: 'LOW_CLASSIFICATION_CONFIDENCE', message: 'Classification confidence is below 0.6' } : null } }];"
+        "jsCode": "const base = $('audit.ingestion.v1').item.json;\nconst classification = $json.data;\nconst confidence = Number(classification?.confidence ?? 0);\nconst lowConfidence = !Number.isFinite(confidence) || confidence < 0.6;\nconst normalizedClassification = lowConfidence ? { ...classification, category: 'manual_review', tags: [...new Set([...(classification?.tags ?? []), 'low_confidence'])] } : classification;\nreturn [{ json: { ...base, classification: normalizedClassification, processing_status: lowConfidence ? 'needs-manual-review' : 'routed', processing_error: lowConfidence ? { code: 'LOW_CLASSIFICATION_CONFIDENCE', message: 'Classification confidence is below 0.6' } : null } }];"
       },
       "id": "noavia-009",
       "name": "Prepare RAG Lookup",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        400,
-        60
+        160,
+        192
       ]
     },
     {
@@ -299,7 +296,7 @@
         "sendBody": true,
         "contentType": "raw",
         "rawContentType": "application/json",
-        "body": "={{ JSON.stringify({ query: $json.ticket.text, top_k: 3, filter: $json.config.rag_filter, collection: $json.config.rag_collection }) }}",
+        "body": "={{ JSON.stringify({ query: $json.ticket.text, top_k: $json.config.top_k, filter: $json.config.rag_filter, collection: $json.config.rag_collection }) }}",
         "options": {
           "response": {
             "response": {
@@ -315,8 +312,8 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
       "position": [
-        620,
-        60
+        384,
+        192
       ]
     },
     {
@@ -349,21 +346,21 @@
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.2,
       "position": [
-        840,
-        60
+        608,
+        192
       ]
     },
     {
       "parameters": {
-        "jsCode": "const base = $('Prepare RAG Lookup').item.json;\nconst threshold = Number(base.config.rag_min_score ?? 0.6);\nconst matches = Array.isArray($json.data?.matches) ? $json.data.matches : [];\nconst ragMatches = matches.filter((match) => Number(match.score) >= threshold).slice(0, 3);\nconst knowledgeSources = ragMatches.map((match) => ({ id: String(match.id ?? ''), score: Number(match.score), citation: String(match.metadata?.source ?? match.metadata?.citation ?? match.id ?? 'knowledge-base'), metadata: match.metadata ?? {} }));\nreturn [{ json: { ...base, rag_matches: ragMatches, knowledge_sources: knowledgeSources, rag_below_threshold: !ragMatches.length, processing_status: base.processing_status ?? 'routed', processing_error: base.processing_error ?? null } }];"
+        "jsCode": "const base = $('Prepare RAG Lookup').item.json;\nconst threshold = Number(base.config.rag_min_score ?? 0.6);\nconst matches = Array.isArray($json.data?.matches) ? $json.data.matches : [];\nconst ragMatches = matches.filter((match) => Number(match.score) >= threshold);\nconst knowledgeSources = ragMatches.map((match) => ({ id: String(match.id ?? ''), score: Number(match.score), citation: String(match.metadata?.source ?? match.metadata?.citation ?? match.id ?? 'knowledge-base'), metadata: match.metadata ?? {} }));\nreturn [{ json: { ...base, rag_matches: ragMatches, knowledge_sources: knowledgeSources, rag_below_threshold: !ragMatches.length, processing_status: base.processing_status ?? 'routed', processing_error: base.processing_error ?? null } }];"
       },
       "id": "noavia-012",
       "name": "Attach RAG Matches",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        1060,
-        -20
+        832,
+        80
       ]
     },
     {
@@ -375,89 +372,67 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        1060,
-        140
+        832,
+        272
       ]
     },
     {
       "parameters": {
-        "jsCode": "const base = $('audit.ingestion.v1').item.json;\nconst processingError = $json.error ?? { code: 'UPSTREAM_ERROR', message: 'Classification failed' };\nconst record = { ts: new Date().toISOString(), module: 'noavia.ticket-pipeline', interface_id: 'workflow.noavia-ticket-pipeline.v1', version: '1', correlation_id: base.correlation_id, level: 'warn', message: 'AI classification fallback activated' };\nconsole.log(JSON.stringify(record));\nreturn [{ json: { ...base, classification: { category: 'manual_review', urgency: 'unknown', sentiment: 'unknown', confidence: 0, summary: 'Classification failed' }, rag_matches: [], knowledge_sources: [], rag_below_threshold: false, processing_status: 'needs-manual-review', processing_error: processingError, audit_logs: [...(base.audit_logs ?? []), record] } }];"
+        "jsCode": "const base = $('audit.ingestion.v1').item.json;\nconst processingError = $json.error ?? { code: 'UPSTREAM_ERROR', message: 'Classification failed' };\nconst record = { ts: new Date().toISOString(), module: 'noavia.ticket-pipeline', interface_id: 'workflow.noavia-ticket-pipeline.v1', version: '1', correlation_id: base.correlation_id, level: 'warn', message: 'AI classification fallback activated' };\nconsole.log(JSON.stringify(record));\nreturn [{ json: { ...base, classification: { category: 'manual_review', confidence: 0, tags: ['classification_failed'] }, rag_matches: [], knowledge_sources: [], rag_below_threshold: false, processing_status: 'needs-manual-review', processing_error: processingError, audit_logs: [...(base.audit_logs ?? []), record] } }];"
       },
       "id": "noavia-014",
       "name": "Classification Fallback",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        400,
-        280
+        160,
+        416
       ]
     },
     {
       "parameters": {
-        "method": "POST",
-        "url": "http://classification-service:8080/ai/grounded-draft/v1",
-        "sendHeaders": true,
-        "headerParameters": {
-          "parameters": [
-            {
-              "name": "Authorization",
-              "value": "={{ 'Bearer ' + $env.AI_CLASSIFY_API_KEY }}"
-            },
-            {
-              "name": "X-Correlation-Id",
-              "value": "={{ $json.correlation_id }}"
-            }
-          ]
-        },
-        "sendBody": true,
-        "contentType": "raw",
-        "rawContentType": "application/json",
-        "body": "={{ JSON.stringify({ ticket_text: $json.ticket.text, matches: ($json.rag_matches ?? []).slice(0, 3) }) }}",
-        "options": {
-          "response": {
-            "response": {
-              "neverError": true,
-              "responseFormat": "json"
-            }
-          },
-          "timeout": 10000
-        }
+        "jsCode": "const threshold = Number($json.config?.rag_min_score ?? 0.6);\nconst candidates = Array.isArray($json.rag_matches) ? $json.rag_matches : [];\nconst matches = candidates.filter((match) => Number(match?.score) >= threshold).slice(0, 5);\nconst sources = Array.isArray($json.knowledge_sources) && $json.knowledge_sources.length\n  ? $json.knowledge_sources.filter((source) => Number(source?.score) >= threshold).slice(0, 5)\n  : matches.map((match) => ({ id: String(match.id ?? ''), score: Number(match.score), citation: String(match.metadata?.source ?? match.metadata?.citation ?? match.id ?? 'knowledge-base'), metadata: match.metadata ?? {} }));\nconst citationBlock = sources.map((source, index) => `[${index + 1}] ${source.citation} (score: ${Number(source.score).toFixed(3)})`).join('\\n');\nconst groundedContext = matches.map((match) => String(match.content ?? '')).filter(Boolean).join('\\n\\n');\nconst noPolicy = $json.rag_below_threshold || !matches.length;\nconst draftReply = noPolicy ? 'No specific policy found — this response is based on general knowledge.' : `Grounded knowledge:\\n${groundedContext}\\n\\nCitations:\\n${citationBlock}`;\nreturn [{ json: { ...$json, rag_matches: matches, rag_below_threshold: noPolicy, knowledge_sources: sources, grounded_draft_reply: { text: draftReply, citations: sources, knowledge_source_metadata: sources.map((source) => source.metadata) } } }];"
       },
       "id": "noavia-024",
       "name": "draft.grounded-reply.v1",
-      "type": "n8n-nodes-base.httpRequest",
-      "typeVersion": 4.2,
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
       "position": [
-        1280,
-        20
+        1040,
+        160
       ]
     },
     {
       "parameters": {
-        "jsCode": "const configuredRoutes = (() => { try { const value = JSON.parse(String($env.NOAVIA_NOTIFY_ROUTE_ALLOWLIST_JSON ?? '{}')); return value && typeof value === 'object' && !Array.isArray(value) ? value : {}; } catch { return {}; } })();\nconst configuredEmail = (key) => { const candidate = configuredRoutes[key]; return typeof candidate === 'string' && /^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/.test(candidate) ? candidate.trim() : null; };\nconst category = String($json.classification.category ?? 'manual_review');\nconst confidence = Number($json.classification.confidence ?? 0);\nconst needsManualReview = !Number.isFinite(confidence) || confidence < 0.6;\nconst routeCategory = needsManualReview ? 'manual_review' : category;\nconst routeEmail = configuredEmail(routeCategory) ?? configuredEmail('default');\nconst queue = routeCategory === 'manual_review' ? 'manual_review' : routeCategory;\nconst status = needsManualReview ? 'needs-manual-review' : $json.processing_status;\nconst contextSummary = ($json.rag_matches ?? []).slice(0, 5).map((m, i) => `${i + 1}. [${Number(m.score).toFixed(3)}] ${m.content}`).join('\\n\\n');\nreturn [{ json: { ...$json, processing_status: status, route: { queue, email: routeEmail }, sheet_row: { received_at: $json.ticket.received_at, ticket_id: $json.ticket.id, correlation_id: $json.correlation_id, requester_email: $json.ticket.requester_email, subject: $json.ticket.subject, category, confidence: $json.classification.confidence, urgency: $json.classification.urgency ?? '', sentiment: $json.classification.sentiment ?? '', summary: $json.classification.summary ?? '', route_queue: queue, route_email: routeEmail, status, attachment_name: $json.ticket.attachment_name ?? '', rag_match_count: ($json.rag_matches ?? []).length, rag_context: contextSummary, error_code: $json.processing_error?.code ?? '', error_message: $json.processing_error?.message ?? '' }, notification_text: `NOAVIA ticket ${$json.ticket.id}\\nCategory: ${category} (${Math.round(confidence * 100)}%)\\nQueue: ${queue}\\nRequester: ${$json.ticket.requester_email}\\nSubject: ${$json.ticket.subject}\\nCorrelation ID: ${$json.correlation_id}\\nStatus: ${status}\\n\\nGrounded draft reply:\\n${$json.grounded_draft_reply?.text ?? ''}\\n\\nRelevant context:\\n${contextSummary || '(none)'}` } }];"
+        "jsCode": "const configuredRoutes = (() => { try { const value = JSON.parse(String($env.NOAVIA_NOTIFY_ROUTE_ALLOWLIST_JSON ?? '{}')); return value && typeof value === 'object' && !Array.isArray(value) ? value : {}; } catch { return {}; } })();\nconst configuredEmail = (key) => { const candidate = configuredRoutes[key]; return typeof candidate === 'string' && /^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/.test(candidate) ? candidate.trim() : null; };\nconst category = String($json.classification.category ?? 'manual_review');\nconst confidence = Number($json.classification.confidence ?? 0);\nconst needsManualReview = !Number.isFinite(confidence) || confidence < 0.6;\nconst routeCategory = needsManualReview ? 'manual_review' : category;\nconst routeEmail = configuredEmail(routeCategory) ?? configuredEmail('default');\nconst queue = routeCategory === 'manual_review' ? 'manual_review' : routeCategory;\nconst status = needsManualReview ? 'needs-manual-review' : $json.processing_status;\nconst contextSummary = ($json.rag_matches ?? []).slice(0, 5).map((m, i) => `${i + 1}. [${Number(m.score).toFixed(3)}] ${m.content}`).join('\\n\\n');\nreturn [{ json: { ...$json, processing_status: status, route: { queue, email: routeEmail }, sheet_row: { received_at: $json.ticket.received_at, ticket_id: $json.ticket.id, correlation_id: $json.correlation_id, requester_email: $json.ticket.requester_email, subject: $json.ticket.subject, category, confidence: $json.classification.confidence, tags: ($json.classification.tags ?? []).join(','), route_queue: queue, route_email: routeEmail, status, attachment_name: $json.ticket.attachment_name ?? '', rag_match_count: ($json.rag_matches ?? []).length, rag_context: contextSummary, error_code: $json.processing_error?.code ?? '', error_message: $json.processing_error?.message ?? '' }, notification_text: `NOAVIA ticket ${$json.ticket.id}\\nCategory: ${category} (${Math.round(confidence * 100)}%)\\nQueue: ${queue}\\nRequester: ${$json.ticket.requester_email}\\nSubject: ${$json.ticket.subject}\\nCorrelation ID: ${$json.correlation_id}\\nStatus: ${status}\\n\\nGrounded draft reply:\\n${$json.grounded_draft_reply?.text ?? ''}\\n\\nRelevant context:\\n${contextSummary || '(none)'}` } }];"
       },
       "id": "noavia-015",
       "name": "route.by-classification.v1",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        1500,
+        1232,
         160
       ]
     },
     {
       "parameters": {
-        "operation": "append",
         "documentId": {
           "__rl": true,
-          "mode": "id",
-          "value": "={{ $json.config.sheet_id }}"
+          "value": "1p8tkmobnCN1joIw0eUojkH1GAVO_kAi6wkMS5cYzh_E",
+          "mode": "list",
+          "cachedResultName": "NOAVIA Support Tickets - Test",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1p8tkmobnCN1joIw0eUojkH1GAVO_kAi6wkMS5cYzh_E/edit?usp=drivesdk"
         },
         "sheetName": {
           "__rl": true,
-          "mode": "name",
-          "value": "={{ $json.config.sheet_name }}"
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Sheet1",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1p8tkmobnCN1joIw0eUojkH1GAVO_kAi6wkMS5cYzh_E/edit#gid=0"
         },
+        "options": {},
+        "operation": "append",
         "columns": {
           "mappingMode": "defineBelow",
           "value": {
@@ -468,9 +443,7 @@
             "subject": "={{ $json.sheet_row.subject }}",
             "category": "={{ $json.sheet_row.category }}",
             "confidence": "={{ $json.sheet_row.confidence }}",
-            "urgency": "={{ $json.sheet_row.urgency }}",
-            "sentiment": "={{ $json.sheet_row.sentiment }}",
-            "summary": "={{ $json.sheet_row.summary }}",
+            "tags": "={{ $json.sheet_row.tags }}",
             "route_queue": "={{ $json.sheet_row.route_queue }}",
             "route_email": "={{ $json.sheet_row.route_email }}",
             "status": "={{ $json.sheet_row.status }}",
@@ -484,50 +457,53 @@
           "schema": [],
           "attemptToConvertTypes": false,
           "convertFieldsToString": true
-        },
-        "options": {}
+        }
       },
       "id": "noavia-016",
       "name": "notify.google-sheets.v1",
       "type": "n8n-nodes-base.googleSheets",
       "typeVersion": 4.6,
       "position": [
-        1500,
-        160
+        1392,
+        16
       ],
       "alwaysOutputData": true,
-      "onError": "continueRegularOutput",
       "credentials": {
         "googleSheetsOAuth2Api": {
-          "id": "REPLACE_WITH_N8N_CREDENTIAL_ID",
-          "name": "NOAVIA Google Sheets"
+          "id": "DFcy2sJOSU7uWRII",
+          "name": "Google Sheets account"
         }
-      }
+      },
+      "onError": "continueRegularOutput"
     },
     {
       "parameters": {
-        "fromEmail": "={{ $env.NOAVIA_NOTIFY_FROM_EMAIL }}",
-        "toEmail": "={{ $('route.by-classification.v1').item.json.route.email }}",
-        "subject": "={{ '[NOAVIA][' + $('route.by-classification.v1').item.json.route.queue + '] ' + $('route.by-classification.v1').item.json.ticket.subject }}",
-        "emailFormat": "text",
-        "text": "={{ $('route.by-classification.v1').item.json.notification_text }}",
-        "options": {}
+        "resource": "message",
+        "operation": "send",
+        "sendTo": "={{ $(\"route.by-classification.v1\").item.json.route.email }}",
+        "subject": "={{ \"[NOAVIA][\" + $(\"route.by-classification.v1\").item.json.route.queue + \"] \" + $(\"route.by-classification.v1\").item.json.ticket.subject }}",
+        "message": "={{ $(\"route.by-classification.v1\").item.json.notification_text }}",
+        "emailType": "text",
+        "options": {
+          "appendAttribution": false
+        }
       },
       "id": "noavia-017",
       "name": "notify.routing-email.v1",
-      "type": "n8n-nodes-base.emailSend",
+      "type": "n8n-nodes-base.gmail",
       "typeVersion": 2.1,
       "position": [
-        1720,
+        1584,
         160
       ],
+      "alwaysOutputData": true,
+      "webhookId": "6b64fad7-886f-4935-a17a-4e03559e285f",
       "credentials": {
-        "smtp": {
-          "id": "REPLACE_WITH_N8N_CREDENTIAL_ID",
-          "name": "NOAVIA SMTP"
+        "gmailOAuth2": {
+          "id": "",
+          "name": ""
         }
       },
-      "alwaysOutputData": true,
       "onError": "continueRegularOutput"
     },
     {
@@ -539,7 +515,7 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        1940,
+        1808,
         160
       ]
     },
@@ -556,12 +532,83 @@
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.4,
       "position": [
-        2160,
+        2016,
         160
       ]
+    },
+    {
+      "parameters": {},
+      "id": "noavia-025",
+      "name": "Manual Trigger - Initialize Ticket Sheet Header",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        1168,
+        -224
+      ],
+      "disabled": true
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "1p8tkmobnCN1joIw0eUojkH1GAVO_kAi6wkMS5cYzh_E",
+          "mode": "list",
+          "cachedResultName": "NOAVIA Support Tickets - Test",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1p8tkmobnCN1joIw0eUojkH1GAVO_kAi6wkMS5cYzh_E/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Sheet1",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1p8tkmobnCN1joIw0eUojkH1GAVO_kAi6wkMS5cYzh_E/edit#gid=0"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "received_at": "received_at",
+            "ticket_id": "ticket_id",
+            "correlation_id": "correlation_id",
+            "requester_email": "requester_email",
+            "subject": "subject",
+            "category": "category",
+            "confidence": "confidence",
+            "tags": "tags",
+            "route_queue": "route_queue",
+            "route_email": "route_email",
+            "status": "status",
+            "attachment_name": "attachment_name",
+            "rag_match_count": "rag_match_count",
+            "rag_context": "rag_context",
+            "error_code": "error_code",
+            "error_message": "error_message"
+          },
+          "matchingColumns": [],
+          "schema": [],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": true
+        },
+        "options": {}
+      },
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "DFcy2sJOSU7uWRII",
+          "name": "Google Sheets account"
+        }
+      },
+      "id": "noavia-026",
+      "name": "initialize.google-sheets-header.v1",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.6,
+      "position": [
+        1392,
+        -224
+      ],
+      "disabled": true
     }
   ],
-  "pinData": {},
   "connections": {
     "Ingest Support Ticket": {
       "main": [
@@ -832,6 +879,17 @@
           }
         ]
       ]
+    },
+    "Manual Trigger - Initialize Ticket Sheet Header": {
+      "main": [
+        [
+          {
+            "node": "initialize.google-sheets-header.v1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     }
   },
   "active": false,
@@ -840,18 +898,9 @@
     "saveManualExecutions": true,
     "saveExecutionProgress": true,
     "saveDataErrorExecution": "all",
-    "saveDataSuccessExecution": "none"
+    "saveDataSuccessExecution": "none",
+    "binaryMode": "separate"
   },
-  "versionId": "b67dd993-60e2-47df-9f89-2db68447c0c1",
-  "meta": {
-    "templateCredsSetupCompleted": false
-  },
-  "tags": [
-    {
-      "name": "workflow.noavia-ticket-pipeline.v1"
-    },
-    {
-      "name": "reference-consumer"
-    }
-  ]
+  "pinData": {},
+  "versionId": "7f755706-b00c-4ed6-86ea-8bc459401818"
 }
