@@ -5,15 +5,14 @@ cases cover four variations for each approved knowledge source and eight
 unsupported requests. It uses only the deterministic local embedding/store and
 writes `evals/noavia_rag_eval_results.json`; it makes no network or model call.
 
-At the measured `0.10` baseline threshold, Recall@3 is 84.38%, Top-1 is 65.62%,
-MRR is 73.96%, unsupported fallback accuracy is 37.5%, and five unsupported
-cases are false-confidence cases. At `0.18`, fallback accuracy improves to
-87.5% but Recall@3 falls to 75% and one false-confidence case remains. The
-supported and unsupported score distributions overlap, so no threshold meets
-all release targets. The committed fixture preserves this measured baseline;
-the smallest justified follow-up is deterministic typo-aware lexical
-normalization, measured against the same cases before considering hybrid search,
-reranking, or metadata filters.
+At the measured `0.10` threshold, Recall@3 is 71.88%, Top-1 is 65.62%, MRR is
+68.75%, unsupported fallback accuracy is 87.5%, and one unsupported case is a
+false-confidence case. The lexical grounding gate prevents most collision-only
+answers, but the deterministic hash baseline remains deliberately limited and
+does not meet a production-quality retrieval target. The committed result file
+is generated from the current fixture and implementation; any improvement (such
+as typo-aware normalization, hybrid retrieval, reranking, or metadata filters)
+must be measured against the same cases before release use.
 
 For a low-confidence response the required sentence is exactly: `No specific
 policy found — this response is based on general knowledge.` The evaluator does
