@@ -137,9 +137,11 @@ services:
       - AI_CLASSIFY_API_KEY=${AI_CLASSIFY_API_KEY}
       - OPENAI_API_KEY=${OPENAI_API_KEY}
       - QDRANT_URL=http://qdrant:6333
-      # This is a Qdrant JWT scoped to the collections this service needs;
-      # it is deliberately not injected into n8n or any other service.
-      - AI_QDRANT_API_KEY=${AI_QDRANT_API_KEY:?Set AI_QDRANT_API_KEY to the classification-service Qdrant JWT}
+      # This is a Qdrant JWT scoped to the collections this service needs; it is
+      # deliberately not injected into n8n or any other service. It is
+      # required only when AI_QDRANT_AUTH_ENABLED=true (the secure default).
+      - AI_QDRANT_AUTH_ENABLED=${AI_QDRANT_AUTH_ENABLED:-true}
+      - AI_QDRANT_API_KEY=${AI_QDRANT_API_KEY:-}
       - AI_OPENAI_BASE_URL=${AI_OPENAI_BASE_URL}
       - AI_EMBEDDING_MODEL=${AI_EMBEDDING_MODEL:-text-embedding-3-small}
       - AI_EMBEDDING_DIMENSIONS=${AI_EMBEDDING_DIMENSIONS}

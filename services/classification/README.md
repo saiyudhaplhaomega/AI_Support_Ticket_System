@@ -167,10 +167,15 @@ If omitted, one is generated per-request.
 ## Env vars
 
 Secrets (required, service refuses to start without them — see
-`app/config.py`): `OPENAI_API_KEY`, `AI_CLASSIFY_API_KEY`, `QDRANT_URL`, and
-`AI_QDRANT_API_KEY`. `AI_QDRANT_API_KEY` must be a short-lived, collection-scoped
+`app/config.py`): `OPENAI_API_KEY`, `AI_CLASSIFY_API_KEY`, and `QDRANT_URL`.
+`AI_QDRANT_AUTH_ENABLED` defaults to `true`; in this mode
+`AI_QDRANT_API_KEY` is required and must be a short-lived, collection-scoped
 Qdrant JWT (`rw` for collections this service ingests into; `r` for query-only
-deployments). The Qdrant admin/signing key is never supplied to this service.
+deployments). For a Qdrant deployment configured without authentication, set
+`AI_QDRANT_AUTH_ENABLED=false` and omit `AI_QDRANT_API_KEY`. The service then
+creates its client without a key. The Qdrant admin/signing key is never supplied
+to this service. Do not set the flag to false merely to work around a missing
+credential on an authenticated deployment.
 
 Everything else is optional with a built-in default — see
 `infra/.env.example` for the full list (`AI_EMBEDDING_MODEL`, `AI_CHAT_MODEL`,
@@ -183,6 +188,7 @@ override only what they need; nothing here is NOAVIA-specific.
 python3 -m venv .venv && . .venv/bin/activate
 pip install -r requirements-dev.txt
 OPENAI_API_KEY=sk-... AI_CLASSIFY_API_KEY=dev-secret QDRANT_URL=http://localhost:6333 \
+  AI_QDRANT_AUTH_ENABLED=false \
   uvicorn app.main:app --reload --port 8080
 ```
 

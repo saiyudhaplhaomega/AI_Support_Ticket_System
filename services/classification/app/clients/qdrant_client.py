@@ -12,7 +12,7 @@ from app.config import Settings
 
 
 @lru_cache(maxsize=1)
-def _cached_client(url: str, api_key: str, timeout: float) -> AsyncQdrantClient:
+def _cached_client(url: str, api_key: str | None, timeout: float) -> AsyncQdrantClient:
     return AsyncQdrantClient(url=url, api_key=api_key, timeout=timeout)
 
 

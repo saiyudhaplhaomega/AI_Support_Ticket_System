@@ -47,7 +47,7 @@ Every module (regardless of family) exposes a contract with these five parts. Th
 ### 3.3 `infra.secrets-and-network` (v1) — owned by Infra & DevOps Engineer
 
 - **Contract, not an API**: a documented set of env var names each module declares it needs (e.g. `OPENAI_API_KEY`, `QDRANT_URL`, `SMTP_*`, `GOOGLE_SHEETS_*`), a Compose network name modules attach to (`saas-internal`), and which services get a public HTTPS ingress vs. stay internal-only.
-- **Consumers** declare required env vars in their module doc; Infra provisions them outside code (secret-store/`.env`, never committed). A module must fail with a clear structured error at startup if a declared var is missing — not fall back to a hardcoded default.
+- **Consumers** declare required env vars in their module doc; Infra provisions them outside code (secret-store/`.env`, never committed). A module must fail with a clear structured error at startup if a declared var is missing — not fall back to a hardcoded default. Conditional credentials must name their security mode explicitly and default to the more restrictive setting: for example, `AI_QDRANT_API_KEY` is required while `AI_QDRANT_AUTH_ENABLED=true` (the default), and may be omitted only when that flag is explicitly `false` for an unauthenticated Qdrant deployment.
 
 ### 3.4 `qa.validation-and-logging` (v1) — owned by QA & Security Engineer, applies to all modules
 

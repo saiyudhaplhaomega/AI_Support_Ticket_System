@@ -56,6 +56,17 @@ def _optional_float(name: str, default: float) -> float:
         raise ConfigError(f"Env var {name}={raw!r} is not a valid float.") from exc
 
 
+def _optional_bool(name: str, default: bool) -> bool:
+    raw = os.environ.get(name, "").strip().lower()
+    if not raw:
+        return default
+    if raw in {"1", "true", "yes", "on"}:
+        return True
+    if raw in {"0", "false", "no", "off"}:
+        return False
+    raise ConfigError(f"Env var {name}={raw!r} is not a valid boolean.")
+
+
 @dataclass(frozen=True)
 class Settings:
     # ---- secrets (required, no hardcoded fallback) ----
@@ -63,8 +74,12 @@ class Settings:
     ai_classify_api_key: str  # inbound bearer token consumers present to *this* service
     qdrant_url: str
 
-    # ---- secrets required for access to the authenticated data store ----
-    qdrant_api_key: str
+    # ---- Qdrant access mode / credential ----
+    # An unauthenticated Qdrant deployment has no credential to supply. Keep
+    # the mode explicit and secure-by-default so a missing key cannot silently
+    # weaken an authenticated deployment.
+    qdrant_auth_enabled: bool
+    qdrant_api_key: str | None
 
     # ---- non-secret tuning knobs (sensible defaults) ----
     openai_base_url: str | None
@@ -81,11 +96,21 @@ class Settings:
 
 
 def load_settings() -> Settings:
+    qdrant_auth_enabled = _optional_bool("AI_QDRANT_AUTH_ENABLED", True)
+    qdrant_api_key = os.environ.get("AI_QDRANT_API_KEY", "").strip() or None
+    if qdrant_auth_enabled and not qdrant_api_key:
+        raise ConfigError(
+            "Missing required env var AI_QDRANT_API_KEY while "
+            "AI_QDRANT_AUTH_ENABLED is true. Set a collection-scoped Qdrant "
+            "credential, or set AI_QDRANT_AUTH_ENABLED=false only for a Qdrant "
+            "deployment with authentication disabled."
+        )
     return Settings(
         openai_api_key=_require("OPENAI_API_KEY"),
         ai_classify_api_key=_require("AI_CLASSIFY_API_KEY"),
         qdrant_url=_require("QDRANT_URL"),
-        qdrant_api_key=_require("AI_QDRANT_API_KEY"),
+        qdrant_auth_enabled=qdrant_auth_enabled,
+        qdrant_api_key=qdrant_api_key,
         openai_base_url=os.environ.get("AI_OPENAI_BASE_URL", "").strip() or None,
         embedding_model=_optional("AI_EMBEDDING_MODEL", "text-embedding-3-small"),
         embedding_dimensions=(
