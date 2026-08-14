@@ -73,13 +73,13 @@ PASS: 24 nodes; validation envelope, audit telemetry, fallbacks, and delivery co
 ## Remaining owner / platform actions
 
 1. **GitHub remote publication**: Required before release. `origin/main` is
-   currently `7059d3bf42f8659cb9c4641f04029706f8e77ad1`; local commit
-   `60a60ea` (`fix: minimize noavia secret exposure`) is reviewed but has not
-   been published because this runtime has no GitHub authentication. An owner
-   or CI identity with repository push permission must push `60a60ea` to
-   `origin/main`, then verify `git rev-parse HEAD` and
-   `git rev-parse origin/main` resolve to the same SHA. Do not treat the
-   security-hardening change as remotely verified until then.
+   currently `7059d3bf42f8659cb9c4641f04029706f8e77ad1`; the local release tip includes reviewed
+   `60a60ea` (`fix: minimize noavia secret exposure`) and this evidence
+   correction. Neither is published because this runtime has no GitHub
+   authentication. An owner or CI identity with repository push permission
+   must push the current local `HEAD` to `origin/main`, then verify `git rev-parse HEAD` and
+   `git rev-parse origin/main` resolve to the same SHA. Do not treat these
+   changes as remotely verified until then.
 2. **OpenAI upgrade** (optional for production): Replace `DeterministicHashEmbedder`
    with OpenAI `text-embedding-3-small` by injecting `OPENAI_API_KEY` into
    the classification service only (do not inject it into n8n). Re-ingest `knowledge-base/noavia` via the service
