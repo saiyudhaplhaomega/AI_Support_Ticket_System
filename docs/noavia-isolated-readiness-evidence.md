@@ -5,6 +5,9 @@ deliberately unexecuted. This is a control-plane and local-fixture record, not
 a claim that Google Sheets, Gmail, OpenAI, or production Qdrant ingestion was
 tested.
 
+Repository remote verification: `origin/main` was verified at
+`e8ef9bd2daacf08a0fcbf412be036988ae78df1a` on 2026-08-14.
+
 ## Isolated n8n workspace — 2026-08-14
 
 The dedicated `paperclip-noavia` API capability was used only against the
@@ -32,9 +35,10 @@ verified as the exact 16-column schema:
 
 `received_at,ticket_id,correlation_id,requester_email,subject,category,confidence,tags,route_queue,route_email,status,attachment_name,rag_match_count,rag_context,error_code,error_message`
 
-No activation or execution was attempted in this update. A live run could
-write a Sheet row or send email, so the Gmail binding remains owner-confirmed
-rather than execution-verified.
+Google Sheets and Gmail bindings are configured but have not been executed.
+No side-effecting live test has occurred: a live run could write a Sheet row
+or send email, so these bindings remain owner-confirmed rather than
+execution-verified.
 
 ## Qdrant / knowledge-base — live ingestion 2026-08-14
 
@@ -84,27 +88,17 @@ PASS: 26 nodes; validation envelope, audit telemetry, fallbacks, and delivery co
 
 ## Remaining owner / platform actions
 
-1. **Publish the QA remediation**: `origin/main` was independently verified at
-   `780c16ec3badbc81ab132c35712087be24b11b3e` on 2026-08-14. The reviewed
-   local QA remediation is `43799c0` (which includes
-   `528e34a982017f2f9de283b0fc3de144f1b61383`,
-   `fix(qa): sanitize Qdrant ingestion errors`). The remediation adds a
-   regression test and removes provider exception text from the ingestion
-   error envelope.
-   This runtime has no GitHub authentication, so an owner or CI identity with
-   repository push permission must publish that commit and verify that local
-   `HEAD` and `origin/main` resolve to the same SHA.
-2. **OpenAI upgrade** (optional for production): Replace `DeterministicHashEmbedder`
+1. **OpenAI upgrade** (optional for production): Replace `DeterministicHashEmbedder`
    with OpenAI `text-embedding-3-small` by injecting `OPENAI_API_KEY` into
    the classification service only (do not inject it into n8n). Re-ingest `knowledge-base/noavia` via the service
    to get production-quality embeddings. The collection name `noavia_kb_v1` and
    point count remain the same.
-3. **n8n credentials**: The Sheets and Gmail OAuth2 bindings are selected in
+2. **n8n credentials**: The Sheets and Gmail OAuth2 bindings are selected in
    the isolated workflow; before a live test, an owner must confirm the Header
    Auth intake credential and that the selected Google identities retain only
    the intended test spreadsheet/tab and approved sender access. Supply
    `config.rag_collection = noavia_kb_v1`.
-4. **Live integration test** (owner approval required): With explicit approval
+3. **Live integration test** (owner approval required): With explicit approval
    for side effects, activate and test using a non-production Sheet and SMTP
    sink, then deactivate immediately after.
 
