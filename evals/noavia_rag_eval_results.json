@@ -14,9 +14,9 @@
       "mean": 0.26674
     },
     "unsupported_top_score_distribution": {
-      "min": 0,
+      "min": 0.0,
       "median": 0.0,
-      "max": 0,
+      "max": 0.0,
       "mean": 0.0
     }
   },

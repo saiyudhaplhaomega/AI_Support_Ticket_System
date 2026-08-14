@@ -41,7 +41,7 @@ test-mode gating, and absence of internal configuration in the page.
 ## RAG evaluation
 
 The 40-case fixture is `evals/noavia_rag_eval.jsonl`; run
-`python3 evals/run_noavia_rag_eval.py`. It writes the reproducible machine
+`python3 evals/noavia_rag_eval.py`. It writes the reproducible machine
 result to `evals/noavia_rag_eval_results.json` without credentials.
 
 The current deterministic hybrid result is Recall@3 100%, Top-1 90.62%, MRR

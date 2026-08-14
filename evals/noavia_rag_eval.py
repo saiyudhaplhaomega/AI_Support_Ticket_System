@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import statistics
 import sys
 from pathlib import Path
 
@@ -61,7 +62,7 @@ def evaluate(cases: list[dict], threshold: float) -> dict:
 
 def _distribution(scores: list[float]) -> dict:
     ordered = sorted(scores)
-    return {"min": round(ordered[0], 6), "median": round(ordered[len(ordered)//2], 6),
+    return {"min": round(ordered[0], 6), "median": round(statistics.median(ordered), 6),
             "max": round(ordered[-1], 6), "mean": round(sum(ordered)/len(ordered), 6)}
 
 

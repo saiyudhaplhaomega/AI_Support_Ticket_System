@@ -13,9 +13,15 @@ tests), and frontend suite (4 tests). No tracked live-secret pattern was found.
 
 1. Update `docs/noavia-rag-evaluation.md` from the retired hash baseline.
    The current committed result at threshold `0.10` is Recall@3 `1.0000`,
-   Top-1 `0.9062`, MRR `0.9479`, unsupported fallback `1.0000`, and no
+   Top-1 `0.9062`, MRR `0.9531`, unsupported fallback `1.0000`, and no
    false-confidence cases. Deterministic local hybrid retrieval is implemented;
    it remains credential- and network-free, not a live model evaluation.
+   (Corrected 2026-08-14: `evals/noavia_rag_eval.py`'s distribution helper used
+   a naive middle-index instead of a true median, which made a *reproduction*
+   run report the wrong `supported_top_score_distribution.median`, 0.226805
+   instead of the committed 0.225769. The metric above, MRR, was never
+   affected. The script now uses `statistics.median`; a fresh run matches the
+   committed `evals/noavia_rag_eval_results.json` exactly.)
 2. Make the equivalent correction in `docs/noavia-functional-verification.md`.
    It must not say hybrid retrieval was not added. Qualify its portal forwarding
    statement: test mode returns before any n8n request; forwarding is
