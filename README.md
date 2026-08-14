@@ -110,3 +110,12 @@ with `Authorization: Bearer $AI_CLASSIFY_API_KEY`. See
 infra rework was needed — the pre-existing slot in `docker-compose.yml` just
 needed a `Dockerfile` and its environment block filled in with the `ai.*`
 tuning vars now documented in `.env.example`.
+
+## AI provider split
+
+OpenAI is used only for inexpensive RAG embeddings (`text-embedding-3-small`).
+MiniMax (`MiniMax-M3`) replaces OpenAI for structured ticket classification and
+RAG-grounded reply drafting to reduce chat operating cost. Configure the split
+with `AI_EMBEDDING_PROVIDER=openai`, `AI_EMBEDDING_MODEL=text-embedding-3-small`,
+`AI_CHAT_PROVIDER=minimax`, and `AI_CHAT_MODEL=MiniMax-M3`; both provider keys
+are secret-store values and are never stored in the workflow export.

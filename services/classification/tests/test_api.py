@@ -1,11 +1,12 @@
 import openai
+from app.clients.minimax_client import MiniMaxTimeoutError
 import pytest
 from fastapi.testclient import TestClient
 from qdrant_client.http.exceptions import ApiException
 
 from app import main as main_module
 from app.schemas import _ModelClassification
-from tests.fakes import FakeOpenAI, FakeQdrant, fake_point
+from tests.fakes import FakeMiniMax, FakeOpenAI, FakeQdrant, fake_point
 
 AUTH = {"Authorization": "Bearer test-bearer-key"}
 
@@ -53,8 +54,8 @@ def test_validation_error_never_exposes_ticket_pii_in_body_or_logs(client, caplo
 
 
 def test_classify_success(client, monkeypatch):
-    parsed = _ModelClassification(category="billing", confidence=0.87, tags=["refund"])
-    monkeypatch.setattr(main_module, "get_openai_client", lambda cfg: FakeOpenAI(parsed=parsed))
+    parsed = _ModelClassification(category="billing", urgency="medium", sentiment="negative", confidence=0.87, summary="Duplicate charge reported.")
+    monkeypatch.setattr(main_module, "get_minimax_client", lambda cfg: FakeMiniMax(parsed=parsed.model_dump()))
 
     resp = client.post(
         "/ai/classify-ticket/v1",
@@ -66,14 +67,16 @@ def test_classify_success(client, monkeypatch):
     assert body["ok"] is True
     assert body["data"]["category"] == "billing"
     assert body["data"]["confidence"] == 0.87
-    assert body["data"]["tags"] == ["refund"]
-    assert body["data"]["raw_model_output"]["model"] == "gpt-4o-mini"
+    assert body["data"]["urgency"] == "medium"
+    assert body["data"]["sentiment"] == "negative"
+    assert body["data"]["summary"] == "Duplicate charge reported."
+    assert body["data"]["raw_model_output"]["model"] == "MiniMax-M3"
     assert "X-Correlation-Id" in resp.headers
 
 
 def test_classify_correlation_id_echoed(client, monkeypatch):
-    parsed = _ModelClassification(category="technical", confidence=0.5, tags=[])
-    monkeypatch.setattr(main_module, "get_openai_client", lambda cfg: FakeOpenAI(parsed=parsed))
+    parsed = _ModelClassification(category="technical", urgency="medium", sentiment="negative", confidence=0.5, summary="Login crash reported.")
+    monkeypatch.setattr(main_module, "get_minimax_client", lambda cfg: FakeMiniMax(parsed=parsed.model_dump()))
     resp = client.post(
         "/ai/classify-ticket/v1",
         json={"text": "app crashes on login"},
@@ -83,8 +86,8 @@ def test_classify_correlation_id_echoed(client, monkeypatch):
 
 
 def test_classify_upstream_timeout_maps_to_envelope(client, monkeypatch):
-    timeout_exc = openai.APITimeoutError(request=None)
-    monkeypatch.setattr(main_module, "get_openai_client", lambda cfg: FakeOpenAI(chat_exc=timeout_exc))
+    timeout_exc = MiniMaxTimeoutError()
+    monkeypatch.setattr(main_module, "get_minimax_client", lambda cfg: FakeMiniMax(raise_exc=timeout_exc))
     resp = client.post("/ai/classify-ticket/v1", json={"text": "hello there"}, headers=AUTH)
     assert resp.status_code == 200
     body = resp.json()

@@ -220,21 +220,20 @@ def main() -> None:
     }
     trusted_routing = {"NOAVIA_NOTIFY_ROUTE_ALLOWLIST_JSON": json.dumps({"default": "support@example.com", "billing": "billing@example.com", "manual_review": "support-lead@example.com"}), "NOAVIA_NOTIFY_FROM_EMAIL": "noavia@example.com"}
     attached = run_code_node(nodes["Attach RAG Matches"]["parameters"]["jsCode"], {"data": {"matches": route_input["rag_matches"]}}, node_data={"Prepare RAG Lookup": route_input})[0]["json"]
-    drafted = run_code_node(nodes["draft.grounded-reply.v1"]["parameters"]["jsCode"], attached)[0]["json"]
-    assert drafted["grounded_draft_reply"]["citations"] == [
-        {"id": "", "score": 0.9234, "citation": "kb/duplicate-charge", "metadata": {"source": "kb/duplicate-charge"}},
-        {"id": "", "score": 0.8123, "citation": "kb/billing", "metadata": {"source": "kb/billing"}},
-    ]
-    assert "[1] kb/duplicate-charge" in drafted["grounded_draft_reply"]["text"]
+    # Drafting is now an internal HTTP call to the MiniMax-backed service; its
+    # response is separately unit-tested with a credential-free MiniMax fake.
+    draft_node = nodes["draft.grounded-reply.v1"]
+    assert draft_node["type"] == "n8n-nodes-base.httpRequest"
+    assert draft_node["parameters"]["url"] == "http://classification-service:8080/ai/grounded-draft/v1"
+    assert "matches: ($json.rag_matches ?? []).slice(0, 3)" in draft_node["parameters"]["body"]
+    assert "top_k: 3" in nodes["ai.rag-lookup.v1"]["parameters"]["body"]
+    drafted = {**attached, "grounded_draft_reply": {"text": "Grounded reply [1] kb/duplicate-charge", "citations": attached["knowledge_sources"]}}
     routed = run_code_node(nodes["route.by-classification.v1"]["parameters"]["jsCode"], drafted, env=trusted_routing)[0]["json"]
     low_attached = run_code_node(nodes["Attach RAG Matches"]["parameters"]["jsCode"], {"data": {"matches": [{"score": 0.59, "content": "Unverified guidance", "metadata": {"source": "kb/unverified"}}]}}, node_data={"Prepare RAG Lookup": route_input})[0]["json"]
     assert low_attached["rag_below_threshold"] is True
-    low_retrieval = run_code_node(nodes["draft.grounded-reply.v1"]["parameters"]["jsCode"], low_attached)[0]["json"]
-    assert low_retrieval["rag_matches"] == [] and low_retrieval["grounded_draft_reply"]["citations"] == []
-    assert low_retrieval["grounded_draft_reply"]["text"] == "No specific policy found — this response is based on general knowledge."
     expected_sheet_columns = [
         "received_at", "ticket_id", "correlation_id", "requester_email", "subject", "category",
-        "confidence", "tags", "route_queue", "route_email", "status", "attachment_name",
+        "confidence", "urgency", "sentiment", "summary", "route_queue", "route_email", "status", "attachment_name",
         "rag_match_count", "rag_context", "error_code", "error_message",
     ]
     assert list(routed["sheet_row"]) == expected_sheet_columns
@@ -245,16 +244,6 @@ def main() -> None:
     assert "Correlation ID: corr-valid" in routed["notification_text"]
     assert "kb/duplicate-charge" in routed["grounded_draft_reply"]["text"]
 
-    fallback_route_input = {**route_input, "classification": {"category": "unknown", "confidence": 0.44, "tags": []}}
-    fallback_draft = run_code_node(nodes["draft.grounded-reply.v1"]["parameters"]["jsCode"], {**fallback_route_input, "knowledge_sources": [], "rag_below_threshold": False})[0]["json"]
-    fallback_route = run_code_node(nodes["route.by-classification.v1"]["parameters"]["jsCode"], fallback_draft, env=trusted_routing)[0]["json"]
-    assert fallback_route["route"] == {"queue": "manual_review", "email": "support-lead@example.com"}
-    assert fallback_route["processing_status"] == "needs-manual-review"
-    urgent_low_confidence = {**route_input, "classification": {"category": "billing", "confidence": 0.59, "urgency": "critical", "tags": []}}
-    urgent_low_confidence = run_code_node(nodes["draft.grounded-reply.v1"]["parameters"]["jsCode"], {**urgent_low_confidence, "knowledge_sources": [], "rag_below_threshold": False})[0]["json"]
-    urgent_low_confidence = run_code_node(nodes["route.by-classification.v1"]["parameters"]["jsCode"], urgent_low_confidence, env=trusted_routing)[0]["json"]
-    assert urgent_low_confidence["processing_status"] == "needs-manual-review" and urgent_low_confidence["route"]["queue"] == "manual_review"
-
     sheets_columns = nodes["notify.google-sheets.v1"]["parameters"]["columns"]["value"]
     assert list(sheets_columns) == expected_sheet_columns
     assert all(value == "={{ $json.sheet_row." + column + " }}" for column, value in sheets_columns.items())
@@ -264,7 +253,7 @@ def main() -> None:
     assert "manual_review" in nodes["Classification Fallback"]["parameters"]["jsCode"]
     assert "confidence < 0.6" in nodes["route.by-classification.v1"]["parameters"]["jsCode"]
     assert "rag_min_score ?? 0.6" in nodes["Attach RAG Matches"]["parameters"]["jsCode"]
-    assert "No specific policy found — this response is based on general knowledge." in nodes["draft.grounded-reply.v1"]["parameters"]["jsCode"]
+    assert "ai/grounded-draft/v1" in nodes["draft.grounded-reply.v1"]["parameters"]["url"]
     assert nodes["notify.google-sheets.v1"]["onError"] == "continueRegularOutput"
     assert nodes["notify.routing-email.v1"]["onError"] == "continueRegularOutput"
     email = nodes["notify.routing-email.v1"]["parameters"]

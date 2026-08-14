@@ -67,3 +67,11 @@ Result: `/bin/bash: line 1: pytest: command not found` (exit code 127). No depen
 ## Release disposition
 
 Do not represent this delivery as complete end-to-end verification. The three previous offline workflow gaps are implemented and independently verified, but a separately authorized integration run must validate n8n execution and every live boundary listed above with least-privilege test credentials.
+
+## Provider split limitation (SAI-32)
+
+Static verification covers the exported workflow and provider configuration.
+No n8n workflow was activated and no Google Sheets or email node was executed.
+Live MiniMax/OpenAI calls remain deliberately unverified because this repository
+contains no credentials; service tests use mocks when the Python test runner is
+available.

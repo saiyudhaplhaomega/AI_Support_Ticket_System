@@ -71,6 +71,7 @@ def _optional_bool(name: str, default: bool) -> bool:
 class Settings:
     # ---- secrets (required, no hardcoded fallback) ----
     openai_api_key: str
+    minimax_api_key: str
     ai_classify_api_key: str  # inbound bearer token consumers present to *this* service
     qdrant_url: str
 
@@ -82,9 +83,10 @@ class Settings:
     qdrant_api_key: str | None
 
     # ---- non-secret tuning knobs (sensible defaults) ----
-    openai_base_url: str | None
+    embedding_provider: str
     embedding_model: str
     embedding_dimensions: int | None
+    chat_provider: str
     chat_model: str
     request_timeout_seconds: float
     rag_default_collection: str
@@ -105,18 +107,26 @@ def load_settings() -> Settings:
             "credential, or set AI_QDRANT_AUTH_ENABLED=false only for a Qdrant "
             "deployment with authentication disabled."
         )
+    embedding_provider = _optional("AI_EMBEDDING_PROVIDER", "openai").lower()
+    chat_provider = _optional("AI_CHAT_PROVIDER", "minimax").lower()
+    if embedding_provider != "openai":
+        raise ConfigError("AI_EMBEDDING_PROVIDER must be 'openai'.")
+    if chat_provider != "minimax":
+        raise ConfigError("AI_CHAT_PROVIDER must be 'minimax'.")
     return Settings(
         openai_api_key=_require("OPENAI_API_KEY"),
+        minimax_api_key=_require("MINIMAX_API_KEY"),
         ai_classify_api_key=_require("AI_CLASSIFY_API_KEY"),
         qdrant_url=_require("QDRANT_URL"),
         qdrant_auth_enabled=qdrant_auth_enabled,
         qdrant_api_key=qdrant_api_key,
-        openai_base_url=os.environ.get("AI_OPENAI_BASE_URL", "").strip() or None,
+        embedding_provider=embedding_provider,
         embedding_model=_optional("AI_EMBEDDING_MODEL", "text-embedding-3-small"),
         embedding_dimensions=(
             _optional_int("AI_EMBEDDING_DIMENSIONS", 0) or None
         ),
-        chat_model=_optional("AI_CHAT_MODEL", "gpt-4o-mini"),
+        chat_provider=chat_provider,
+        chat_model=_optional("AI_CHAT_MODEL", "MiniMax-M3"),
         request_timeout_seconds=_optional_float("AI_UPSTREAM_TIMEOUT_SECONDS", 8.0),
         rag_default_collection=_optional("AI_RAG_COLLECTION", "kb_documents"),
         rag_default_top_k=_optional_int("AI_RAG_TOP_K_DEFAULT", 5),

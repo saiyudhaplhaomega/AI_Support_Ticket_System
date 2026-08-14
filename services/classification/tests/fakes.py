@@ -82,3 +82,15 @@ class FakeQdrant:
 
 def fake_point(id_: str, score: float, payload: dict):
     return SimpleNamespace(id=id_, score=score, payload=payload)
+
+class FakeMiniMax:
+    """Credential-free MiniMax chat fake for classification/draft tests."""
+    def __init__(self, parsed=None, raise_exc=None):
+        self._parsed = parsed or {"category": "billing", "urgency": "medium", "sentiment": "negative", "confidence": 0.87, "summary": "Duplicate charge reported."}
+        self._raise = raise_exc
+        self.calls = []
+    async def complete_json(self, **kwargs):
+        self.calls.append(kwargs)
+        if self._raise:
+            raise self._raise
+        return {"parsed": self._parsed, "model": "MiniMax-M3", "id": "minimax-test-1", "usage": {"total_tokens": 42}}

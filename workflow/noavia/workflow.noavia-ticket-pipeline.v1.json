@@ -268,7 +268,7 @@
     },
     {
       "parameters": {
-        "jsCode": "const base = $('audit.ingestion.v1').item.json;\nconst classification = $json.data;\nconst confidence = Number(classification?.confidence ?? 0);\nconst lowConfidence = !Number.isFinite(confidence) || confidence < 0.6;\nconst normalizedClassification = lowConfidence ? { ...classification, category: 'manual_review', tags: [...new Set([...(classification?.tags ?? []), 'low_confidence'])] } : classification;\nreturn [{ json: { ...base, classification: normalizedClassification, processing_status: lowConfidence ? 'needs-manual-review' : 'routed', processing_error: lowConfidence ? { code: 'LOW_CLASSIFICATION_CONFIDENCE', message: 'Classification confidence is below 0.6' } : null } }];"
+        "jsCode": "const base = $('audit.ingestion.v1').item.json;\nconst classification = $json.data;\nconst confidence = Number(classification?.confidence ?? 0);\nconst lowConfidence = !Number.isFinite(confidence) || confidence < 0.6;\nconst normalizedClassification = lowConfidence ? { ...classification, category: 'manual_review', urgency: classification?.urgency ?? 'unknown', sentiment: classification?.sentiment ?? 'unknown', summary: classification?.summary ?? 'Low-confidence classification' } : classification;\nreturn [{ json: { ...base, classification: normalizedClassification, processing_status: lowConfidence ? 'needs-manual-review' : 'routed', processing_error: lowConfidence ? { code: 'LOW_CLASSIFICATION_CONFIDENCE', message: 'Classification confidence is below 0.6' } : null } }];"
       },
       "id": "noavia-009",
       "name": "Prepare RAG Lookup",
@@ -299,7 +299,7 @@
         "sendBody": true,
         "contentType": "raw",
         "rawContentType": "application/json",
-        "body": "={{ JSON.stringify({ query: $json.ticket.text, top_k: $json.config.top_k, filter: $json.config.rag_filter, collection: $json.config.rag_collection }) }}",
+        "body": "={{ JSON.stringify({ query: $json.ticket.text, top_k: 3, filter: $json.config.rag_filter, collection: $json.config.rag_collection }) }}",
         "options": {
           "response": {
             "response": {
@@ -355,7 +355,7 @@
     },
     {
       "parameters": {
-        "jsCode": "const base = $('Prepare RAG Lookup').item.json;\nconst threshold = Number(base.config.rag_min_score ?? 0.6);\nconst matches = Array.isArray($json.data?.matches) ? $json.data.matches : [];\nconst ragMatches = matches.filter((match) => Number(match.score) >= threshold);\nconst knowledgeSources = ragMatches.map((match) => ({ id: String(match.id ?? ''), score: Number(match.score), citation: String(match.metadata?.source ?? match.metadata?.citation ?? match.id ?? 'knowledge-base'), metadata: match.metadata ?? {} }));\nreturn [{ json: { ...base, rag_matches: ragMatches, knowledge_sources: knowledgeSources, rag_below_threshold: !ragMatches.length, processing_status: base.processing_status ?? 'routed', processing_error: base.processing_error ?? null } }];"
+        "jsCode": "const base = $('Prepare RAG Lookup').item.json;\nconst threshold = Number(base.config.rag_min_score ?? 0.6);\nconst matches = Array.isArray($json.data?.matches) ? $json.data.matches : [];\nconst ragMatches = matches.filter((match) => Number(match.score) >= threshold).slice(0, 3);\nconst knowledgeSources = ragMatches.map((match) => ({ id: String(match.id ?? ''), score: Number(match.score), citation: String(match.metadata?.source ?? match.metadata?.citation ?? match.id ?? 'knowledge-base'), metadata: match.metadata ?? {} }));\nreturn [{ json: { ...base, rag_matches: ragMatches, knowledge_sources: knowledgeSources, rag_below_threshold: !ragMatches.length, processing_status: base.processing_status ?? 'routed', processing_error: base.processing_error ?? null } }];"
       },
       "id": "noavia-012",
       "name": "Attach RAG Matches",
@@ -381,7 +381,7 @@
     },
     {
       "parameters": {
-        "jsCode": "const base = $('audit.ingestion.v1').item.json;\nconst processingError = $json.error ?? { code: 'UPSTREAM_ERROR', message: 'Classification failed' };\nconst record = { ts: new Date().toISOString(), module: 'noavia.ticket-pipeline', interface_id: 'workflow.noavia-ticket-pipeline.v1', version: '1', correlation_id: base.correlation_id, level: 'warn', message: 'AI classification fallback activated' };\nconsole.log(JSON.stringify(record));\nreturn [{ json: { ...base, classification: { category: 'manual_review', confidence: 0, tags: ['classification_failed'] }, rag_matches: [], knowledge_sources: [], rag_below_threshold: false, processing_status: 'needs-manual-review', processing_error: processingError, audit_logs: [...(base.audit_logs ?? []), record] } }];"
+        "jsCode": "const base = $('audit.ingestion.v1').item.json;\nconst processingError = $json.error ?? { code: 'UPSTREAM_ERROR', message: 'Classification failed' };\nconst record = { ts: new Date().toISOString(), module: 'noavia.ticket-pipeline', interface_id: 'workflow.noavia-ticket-pipeline.v1', version: '1', correlation_id: base.correlation_id, level: 'warn', message: 'AI classification fallback activated' };\nconsole.log(JSON.stringify(record));\nreturn [{ json: { ...base, classification: { category: 'manual_review', urgency: 'unknown', sentiment: 'unknown', confidence: 0, summary: 'Classification failed' }, rag_matches: [], knowledge_sources: [], rag_below_threshold: false, processing_status: 'needs-manual-review', processing_error: processingError, audit_logs: [...(base.audit_logs ?? []), record] } }];"
       },
       "id": "noavia-014",
       "name": "Classification Fallback",
@@ -394,12 +394,39 @@
     },
     {
       "parameters": {
-        "jsCode": "const threshold = Number($json.config?.rag_min_score ?? 0.6);\nconst candidates = Array.isArray($json.rag_matches) ? $json.rag_matches : [];\nconst matches = candidates.filter((match) => Number(match?.score) >= threshold).slice(0, 5);\nconst sources = Array.isArray($json.knowledge_sources) && $json.knowledge_sources.length\n  ? $json.knowledge_sources.filter((source) => Number(source?.score) >= threshold).slice(0, 5)\n  : matches.map((match) => ({ id: String(match.id ?? ''), score: Number(match.score), citation: String(match.metadata?.source ?? match.metadata?.citation ?? match.id ?? 'knowledge-base'), metadata: match.metadata ?? {} }));\nconst citationBlock = sources.map((source, index) => `[${index + 1}] ${source.citation} (score: ${Number(source.score).toFixed(3)})`).join('\\n');\nconst groundedContext = matches.map((match) => String(match.content ?? '')).filter(Boolean).join('\\n\\n');\nconst noPolicy = $json.rag_below_threshold || !matches.length;\nconst draftReply = noPolicy ? 'No specific policy found — this response is based on general knowledge.' : `Grounded knowledge:\\n${groundedContext}\\n\\nCitations:\\n${citationBlock}`;\nreturn [{ json: { ...$json, rag_matches: matches, rag_below_threshold: noPolicy, knowledge_sources: sources, grounded_draft_reply: { text: draftReply, citations: sources, knowledge_source_metadata: sources.map((source) => source.metadata) } } }];"
+        "method": "POST",
+        "url": "http://classification-service:8080/ai/grounded-draft/v1",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "={{ 'Bearer ' + $env.AI_CLASSIFY_API_KEY }}"
+            },
+            {
+              "name": "X-Correlation-Id",
+              "value": "={{ $json.correlation_id }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "contentType": "raw",
+        "rawContentType": "application/json",
+        "body": "={{ JSON.stringify({ ticket_text: $json.ticket.text, matches: ($json.rag_matches ?? []).slice(0, 3) }) }}",
+        "options": {
+          "response": {
+            "response": {
+              "neverError": true,
+              "responseFormat": "json"
+            }
+          },
+          "timeout": 10000
+        }
       },
       "id": "noavia-024",
       "name": "draft.grounded-reply.v1",
-      "type": "n8n-nodes-base.code",
-      "typeVersion": 2,
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
       "position": [
         1280,
         20
@@ -407,7 +434,7 @@
     },
     {
       "parameters": {
-        "jsCode": "const configuredRoutes = (() => { try { const value = JSON.parse(String($env.NOAVIA_NOTIFY_ROUTE_ALLOWLIST_JSON ?? '{}')); return value && typeof value === 'object' && !Array.isArray(value) ? value : {}; } catch { return {}; } })();\nconst configuredEmail = (key) => { const candidate = configuredRoutes[key]; return typeof candidate === 'string' && /^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/.test(candidate) ? candidate.trim() : null; };\nconst category = String($json.classification.category ?? 'manual_review');\nconst confidence = Number($json.classification.confidence ?? 0);\nconst needsManualReview = !Number.isFinite(confidence) || confidence < 0.6;\nconst routeCategory = needsManualReview ? 'manual_review' : category;\nconst routeEmail = configuredEmail(routeCategory) ?? configuredEmail('default');\nconst queue = routeCategory === 'manual_review' ? 'manual_review' : routeCategory;\nconst status = needsManualReview ? 'needs-manual-review' : $json.processing_status;\nconst contextSummary = ($json.rag_matches ?? []).slice(0, 5).map((m, i) => `${i + 1}. [${Number(m.score).toFixed(3)}] ${m.content}`).join('\\n\\n');\nreturn [{ json: { ...$json, processing_status: status, route: { queue, email: routeEmail }, sheet_row: { received_at: $json.ticket.received_at, ticket_id: $json.ticket.id, correlation_id: $json.correlation_id, requester_email: $json.ticket.requester_email, subject: $json.ticket.subject, category, confidence: $json.classification.confidence, tags: ($json.classification.tags ?? []).join(','), route_queue: queue, route_email: routeEmail, status, attachment_name: $json.ticket.attachment_name ?? '', rag_match_count: ($json.rag_matches ?? []).length, rag_context: contextSummary, error_code: $json.processing_error?.code ?? '', error_message: $json.processing_error?.message ?? '' }, notification_text: `NOAVIA ticket ${$json.ticket.id}\\nCategory: ${category} (${Math.round(confidence * 100)}%)\\nQueue: ${queue}\\nRequester: ${$json.ticket.requester_email}\\nSubject: ${$json.ticket.subject}\\nCorrelation ID: ${$json.correlation_id}\\nStatus: ${status}\\n\\nGrounded draft reply:\\n${$json.grounded_draft_reply?.text ?? ''}\\n\\nRelevant context:\\n${contextSummary || '(none)'}` } }];"
+        "jsCode": "const configuredRoutes = (() => { try { const value = JSON.parse(String($env.NOAVIA_NOTIFY_ROUTE_ALLOWLIST_JSON ?? '{}')); return value && typeof value === 'object' && !Array.isArray(value) ? value : {}; } catch { return {}; } })();\nconst configuredEmail = (key) => { const candidate = configuredRoutes[key]; return typeof candidate === 'string' && /^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/.test(candidate) ? candidate.trim() : null; };\nconst category = String($json.classification.category ?? 'manual_review');\nconst confidence = Number($json.classification.confidence ?? 0);\nconst needsManualReview = !Number.isFinite(confidence) || confidence < 0.6;\nconst routeCategory = needsManualReview ? 'manual_review' : category;\nconst routeEmail = configuredEmail(routeCategory) ?? configuredEmail('default');\nconst queue = routeCategory === 'manual_review' ? 'manual_review' : routeCategory;\nconst status = needsManualReview ? 'needs-manual-review' : $json.processing_status;\nconst contextSummary = ($json.rag_matches ?? []).slice(0, 5).map((m, i) => `${i + 1}. [${Number(m.score).toFixed(3)}] ${m.content}`).join('\\n\\n');\nreturn [{ json: { ...$json, processing_status: status, route: { queue, email: routeEmail }, sheet_row: { received_at: $json.ticket.received_at, ticket_id: $json.ticket.id, correlation_id: $json.correlation_id, requester_email: $json.ticket.requester_email, subject: $json.ticket.subject, category, confidence: $json.classification.confidence, urgency: $json.classification.urgency ?? '', sentiment: $json.classification.sentiment ?? '', summary: $json.classification.summary ?? '', route_queue: queue, route_email: routeEmail, status, attachment_name: $json.ticket.attachment_name ?? '', rag_match_count: ($json.rag_matches ?? []).length, rag_context: contextSummary, error_code: $json.processing_error?.code ?? '', error_message: $json.processing_error?.message ?? '' }, notification_text: `NOAVIA ticket ${$json.ticket.id}\\nCategory: ${category} (${Math.round(confidence * 100)}%)\\nQueue: ${queue}\\nRequester: ${$json.ticket.requester_email}\\nSubject: ${$json.ticket.subject}\\nCorrelation ID: ${$json.correlation_id}\\nStatus: ${status}\\n\\nGrounded draft reply:\\n${$json.grounded_draft_reply?.text ?? ''}\\n\\nRelevant context:\\n${contextSummary || '(none)'}` } }];"
       },
       "id": "noavia-015",
       "name": "route.by-classification.v1",
@@ -441,7 +468,9 @@
             "subject": "={{ $json.sheet_row.subject }}",
             "category": "={{ $json.sheet_row.category }}",
             "confidence": "={{ $json.sheet_row.confidence }}",
-            "tags": "={{ $json.sheet_row.tags }}",
+            "urgency": "={{ $json.sheet_row.urgency }}",
+            "sentiment": "={{ $json.sheet_row.sentiment }}",
+            "summary": "={{ $json.sheet_row.summary }}",
             "route_queue": "={{ $json.sheet_row.route_queue }}",
             "route_email": "={{ $json.sheet_row.route_email }}",
             "status": "={{ $json.sheet_row.status }}",

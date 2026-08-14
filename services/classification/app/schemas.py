@@ -38,8 +38,10 @@ class ClassifyTicketInput(BaseModel):
 
 class ClassifyTicketOutputData(BaseModel):
     category: str
+    urgency: str
+    sentiment: str
     confidence: float = Field(..., ge=0.0, le=1.0)
-    tags: list[str] = Field(default_factory=list)
+    summary: str
     raw_model_output: dict[str, Any] | None = None
 
 
@@ -48,8 +50,10 @@ class ClassifyTicketOutputData(BaseModel):
 # `raw_model_output`) without changing what we require the model to emit.
 class _ModelClassification(BaseModel):
     category: str = Field(..., description="Best-fit category from the provided taxonomy.")
+    urgency: str
+    sentiment: str
     confidence: float = Field(..., ge=0.0, le=1.0, description="Self-assessed confidence, 0-1.")
-    tags: list[str] = Field(default_factory=list, description="Short free-form labels, e.g. 'refund', 'urgent'.")
+    summary: str
 
 
 # ---------------------------------------------------------------------------
@@ -90,6 +94,16 @@ class RagMatch(BaseModel):
 
 class RagLookupOutputData(BaseModel):
     matches: list[RagMatch]
+
+
+class GroundedDraftInput(BaseModel):
+    ticket_text: str = Field(..., min_length=1, max_length=20_000)
+    matches: list[RagMatch] = Field(default_factory=list, max_length=3)
+
+
+class GroundedDraftOutputData(BaseModel):
+    text: str
+    citations: list[dict[str, Any]] = Field(default_factory=list)
 
 
 # ---------------------------------------------------------------------------

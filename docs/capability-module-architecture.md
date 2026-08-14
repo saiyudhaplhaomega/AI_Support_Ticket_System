@@ -99,3 +99,13 @@ standalone HTTP service, not n8n sub-workflows. This decision is reflected in
 versioned contracts. It is a repository implementation decision; live service
 deployment and integration remain unverified (see
 `docs/noavia-offline-delivery-evidence.md`).
+
+## 8. Provider split (SAI-32)
+
+The reusable AI module uses OpenAI only for `text-embedding-3-small` embedding
+calls. MiniMax (`MiniMax-M3`, Bearer `MINIMAX_API_KEY`) is the sole chat
+provider for classification and grounded drafting, reducing chat operating
+cost without changing Qdrant retrieval. The NOAVIA workflow requests exactly
+top-three RAG matches and calls the internal `ai.grounded-draft.v1` endpoint;
+the service retains source-file citations. When no qualifying source exists it
+returns exactly: `No specific policy found — this response is based on general knowledge.`

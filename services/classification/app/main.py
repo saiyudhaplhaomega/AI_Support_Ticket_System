@@ -20,11 +20,13 @@ from pydantic import ValidationError
 
 from app.config import Settings, load_settings_or_exit
 from app.clients.openai_client import get_openai_client
+from app.clients.minimax_client import get_minimax_client
 from app.clients.qdrant_client import get_qdrant_client
 from app.errors import ErrorCode, ModuleError, error_envelope, success_envelope
 from app.logging_utils import configure_logging, log_event
 from app.schemas import (
     ClassifyTicketInput,
+    GroundedDraftInput,
     IngestRequest,
     RagLookupInput,
 )
@@ -32,6 +34,7 @@ from app.security import verify_bearer_token
 from app.services.classify_service import INTERFACE_ID as CLASSIFY_INTERFACE_ID
 from app.services.classify_service import classify_ticket
 from app.services.ingest_service import ingest_documents
+from app.services.draft_service import grounded_draft
 from app.services.rag_service import INTERFACE_ID as RAG_INTERFACE_ID
 from app.services.rag_service import rag_lookup
 
@@ -213,7 +216,7 @@ async def post_classify_ticket(
     cfg: Settings = Depends(get_settings),
     correlation_id: str = Depends(get_correlation_id),
 ) -> JSONResponse:
-    client = get_openai_client(cfg)
+    client = get_minimax_client(cfg)
     data = await classify_ticket(client, cfg, payload, correlation_id)
     log_event(
         logger, "info", "classified ticket",
@@ -221,6 +224,11 @@ async def post_classify_ticket(
     )
     return JSONResponse(status_code=200, content=success_envelope(data.model_dump()))
 
+
+@app.post("/ai/grounded-draft/v1", dependencies=[Depends(require_auth)])
+async def post_grounded_draft(payload: GroundedDraftInput, cfg: Settings = Depends(get_settings)) -> JSONResponse:
+    data = await grounded_draft(get_minimax_client(cfg), cfg, payload)
+    return JSONResponse(status_code=200, content=success_envelope(data.model_dump()))
 
 @app.post("/ai/rag-lookup/v1", dependencies=[Depends(require_auth)])
 async def post_rag_lookup(

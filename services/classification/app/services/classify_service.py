@@ -1,116 +1,28 @@
-"""ai.classify-ticket.v1 implementation.
-
-Uses OpenAI structured outputs (`chat.completions.parse` against a Pydantic
-model) so the model is constrained to emit schema-conformant JSON rather
-than free text that downstream automation would have to parse/guess at.
-"""
+"""ai.classify-ticket.v1 using MiniMax JSON chat completion (OpenAI is embeddings-only)."""
 from __future__ import annotations
-
 import logging
-
-import openai
-
+from pydantic import ValidationError
+from app.clients.minimax_client import MiniMaxAPIError, MiniMaxTimeoutError
 from app.config import Settings
 from app.errors import ErrorCode, ModuleError
 from app.logging_utils import log_event
 from app.schemas import ClassifyTicketInput, ClassifyTicketOutputData, _ModelClassification
-
 INTERFACE_ID = "ai.classify-ticket"
-
 logger = logging.getLogger(__name__)
-
-_SYSTEM_PROMPT = (
-    "You are a support-ticket classification engine for an AI-powered SaaS "
-    "support platform. Classify the ticket into exactly one category from "
-    "the provided taxonomy, estimate your confidence honestly (0-1, where 1 "
-    "means unambiguous), and attach a few short free-form tags (e.g. "
-    "'refund', 'urgent', 'bug'). Only use information present in the ticket "
-    "text and context; never invent facts."
-)
-
-
-def _build_user_prompt(input_data: ClassifyTicketInput, categories: list[str]) -> str:
-    lines = [
-        f"Taxonomy (pick exactly one): {', '.join(categories)}",
-    ]
-    if input_data.locale:
-        lines.append(f"Locale: {input_data.locale}")
-    if input_data.context:
-        extra_context = {k: v for k, v in input_data.context.items() if k != "categories"}
-        if extra_context:
-            lines.append(f"Additional context: {extra_context!r}")
-    lines.append("Ticket text:")
-    lines.append(input_data.text)
-    return "\n".join(lines)
-
-
-async def classify_ticket(
-    openai_client: "openai.AsyncOpenAI",
-    settings: Settings,
-    input_data: ClassifyTicketInput,
-    correlation_id: str,
-) -> ClassifyTicketOutputData:
-    categories = (
-        [str(c) for c in input_data.context.get("categories", [])]
-        if input_data.context and input_data.context.get("categories")
-        else settings.classify_default_categories
-    )
-
+_SYSTEM_PROMPT = "Return JSON only. Classify the ticket from the taxonomy. Fields: category, urgency (low|medium|high|critical), sentiment (negative|neutral|positive), confidence (0-1), summary. Do not invent facts."
+def _build_user_prompt(data, categories):
+    parts=[f"Taxonomy (pick exactly one): {', '.join(categories)}"]
+    if data.locale: parts.append(f"Locale: {data.locale}")
+    if data.context:
+        extra={k:v for k,v in data.context.items() if k != "categories"}
+        if extra: parts.append(f"Additional context: {extra!r}")
+    return "\n".join(parts+["Ticket text:", data.text])
+async def classify_ticket(minimax_client, settings: Settings, input_data: ClassifyTicketInput, correlation_id: str) -> ClassifyTicketOutputData:
+    categories = [str(c) for c in input_data.context.get("categories", [])] if input_data.context and input_data.context.get("categories") else settings.classify_default_categories
     try:
-        completion = await openai_client.chat.completions.parse(
-            model=settings.chat_model,
-            messages=[
-                {"role": "system", "content": _SYSTEM_PROMPT},
-                {"role": "user", "content": _build_user_prompt(input_data, categories)},
-            ],
-            response_format=_ModelClassification,
-            timeout=settings.request_timeout_seconds,
-        )
-    except openai.APITimeoutError as exc:
-        raise ModuleError(
-            ErrorCode.UPSTREAM_TIMEOUT,
-            "Classification model did not respond in time.",
-            interface_id=INTERFACE_ID,
-        ) from exc
-    except openai.APIError as exc:
-        raise ModuleError(
-            ErrorCode.UPSTREAM_ERROR,
-            "Classification model call failed.",
-            interface_id=INTERFACE_ID,
-        ) from exc
-
-    parsed = completion.choices[0].message.parsed
-    if parsed is None:
-        refusal = getattr(completion.choices[0].message, "refusal", None)
-        log_event(
-            logger, "warning", "model refused or returned unparsable output",
-            interface_id=INTERFACE_ID, correlation_id=correlation_id, refusal=refusal,
-        )
-        raise ModuleError(
-            ErrorCode.UPSTREAM_ERROR,
-            "Classification model returned no structured output.",
-            interface_id=INTERFACE_ID,
-        )
-
-    category = parsed.category or "uncategorized"
-    if category not in categories:
-        # Schema constrains shape (a string), not membership in the
-        # taxonomy — the model can still drift outside it. Don't silently
-        # coerce; surface it so prompt/taxonomy drift is visible in logs.
-        log_event(
-            logger, "warning", "model returned category outside requested taxonomy",
-            interface_id=INTERFACE_ID, correlation_id=correlation_id, category=category, taxonomy=categories,
-        )
-    confidence = max(0.0, min(1.0, parsed.confidence))
-
-    return ClassifyTicketOutputData(
-        category=category,
-        confidence=confidence,
-        tags=parsed.tags,
-        raw_model_output={
-            "model": completion.model,
-            "id": completion.id,
-            "finish_reason": completion.choices[0].finish_reason,
-            "usage": completion.usage.model_dump() if completion.usage else None,
-        },
-    )
+        result = await minimax_client.complete_json(model=settings.chat_model, messages=[{"role":"system","content":_SYSTEM_PROMPT},{"role":"user","content":_build_user_prompt(input_data,categories)}])
+        parsed = _ModelClassification.model_validate(result["parsed"])
+    except MiniMaxTimeoutError as exc: raise ModuleError(ErrorCode.UPSTREAM_TIMEOUT,"Classification model did not respond in time.",interface_id=INTERFACE_ID) from exc
+    except (MiniMaxAPIError, ValidationError) as exc: raise ModuleError(ErrorCode.UPSTREAM_ERROR,"Classification model returned no structured output.",interface_id=INTERFACE_ID) from exc
+    if parsed.category not in categories: log_event(logger,"warning","model returned category outside requested taxonomy",interface_id=INTERFACE_ID,correlation_id=correlation_id,category=parsed.category,taxonomy=categories)
+    return ClassifyTicketOutputData(category=parsed.category, urgency=parsed.urgency, sentiment=parsed.sentiment, confidence=max(0.0,min(1.0,parsed.confidence)), summary=parsed.summary, raw_model_output={"provider":"minimax","model":result["model"],"id":result["id"],"usage":result["usage"]})
