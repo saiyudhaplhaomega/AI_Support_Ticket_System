@@ -74,9 +74,8 @@ services:
       - GENERIC_TIMEZONE=${INFRA_TIMEZONE:-UTC}
       # ai.* module secrets — n8n's HTTP nodes consume only this service's
       # bearer token. Qdrant credentials intentionally are NOT present here:
-      # all vector-store access goes through classification-service.
+      # all vector-store and OpenAI access goes through classification-service.
       - AI_CLASSIFY_API_KEY=${AI_CLASSIFY_API_KEY}
-      - OPENAI_API_KEY=${OPENAI_API_KEY}
       # notify.* output nodes
       - SMTP_HOST=${SMTP_HOST}
       - SMTP_PORT=${SMTP_PORT}

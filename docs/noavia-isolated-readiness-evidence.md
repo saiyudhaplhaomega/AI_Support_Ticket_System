@@ -72,14 +72,12 @@ PASS: 24 nodes; validation envelope, audit telemetry, fallbacks, and delivery co
 
 ## Remaining owner / platform actions
 
-1. **GitHub push**: Provide GitHub credentials (`GITHUB_TOKEN` or SSH key) so
-   3 local commits (including `fix: skip empty Qdrant api_key for unauthenticated
-   deployments`, `fix: restrict NOAVIA SMTP routing to server config`,
-   `Make Qdrant API key conditional on auth mode`) can be pushed to
-   `origin/main`.
+1. **GitHub remote**: No owner action required. The reviewed commit
+   `7059d3bf42f8659cb9c4641f04029706f8e77ad1` resolves identically for local
+   `HEAD` and `origin/main`.
 2. **OpenAI upgrade** (optional for production): Replace `DeterministicHashEmbedder`
    with OpenAI `text-embedding-3-small` by injecting `OPENAI_API_KEY` into
-   the classification service. Re-ingest `knowledge-base/noavia` via the service
+   the classification service only (do not inject it into n8n). Re-ingest `knowledge-base/noavia` via the service
    to get production-quality embeddings. The collection name `noavia_kb_v1` and
    point count remain the same.
 3. **n8n credentials**: In n8n workspace, replace the three credential placeholders
