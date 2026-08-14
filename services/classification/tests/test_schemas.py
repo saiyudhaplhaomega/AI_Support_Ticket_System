@@ -25,6 +25,23 @@ def test_classify_output_confidence_bounds():
     assert ok.confidence == 0.9
 
 
+def test_classify_output_original_v1_shape_still_valid():
+    # Original published ai.classify-ticket.v1 contract: only category,
+    # confidence, and tags were required. This must keep validating even
+    # though urgency/sentiment/summary were added later as additive optional
+    # fields — otherwise old callers/fixtures break silently.
+    ok = ClassifyTicketOutputData(category="billing", confidence=0.9, tags=["refund"])
+    assert ok.tags == ["refund"]
+    assert ok.urgency is None
+    assert ok.sentiment is None
+    assert ok.summary is None
+
+
+def test_classify_output_tags_defaults_to_empty_list():
+    ok = ClassifyTicketOutputData(category="billing", confidence=0.9)
+    assert ok.tags == []
+
+
 def test_rag_input_rejects_blank_query():
     with pytest.raises(ValidationError):
         RagLookupInput(query="")

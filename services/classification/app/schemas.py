@@ -37,22 +37,31 @@ class ClassifyTicketInput(BaseModel):
 
 
 class ClassifyTicketOutputData(BaseModel):
+    # `category`, `confidence`, and `tags` are the original published v1
+    # fields (capability-module-architecture.md §3.1) and stay required so
+    # existing consumers never see a shape change. `urgency`, `sentiment`,
+    # and `summary` are additive optional fields per the §4 versioning rule
+    # ("additive optional fields do not require a bump") — the MiniMax
+    # classification prompt always fills them in practice, but they are not
+    # part of the required v1 contract.
     category: str
-    urgency: str
-    sentiment: str
     confidence: float = Field(..., ge=0.0, le=1.0)
-    summary: str
+    tags: list[str] = Field(default_factory=list)
+    urgency: str | None = None
+    sentiment: str | None = None
+    summary: str | None = None
     raw_model_output: dict[str, Any] | None = None
 
 
-# Internal shape asked of the OpenAI structured-output call. Kept separate
+# Internal shape asked of the MiniMax structured-output call. Kept separate
 # from ClassifyTicketOutputData so the wire contract can gain fields (e.g.
 # `raw_model_output`) without changing what we require the model to emit.
 class _ModelClassification(BaseModel):
     category: str = Field(..., description="Best-fit category from the provided taxonomy.")
+    confidence: float = Field(..., ge=0.0, le=1.0, description="Self-assessed confidence, 0-1.")
+    tags: list[str] = Field(default_factory=list, description="Short free-form labels, e.g. 'refund', 'urgent'.")
     urgency: str
     sentiment: str
-    confidence: float = Field(..., ge=0.0, le=1.0, description="Self-assessed confidence, 0-1.")
     summary: str
 
 

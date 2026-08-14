@@ -54,7 +54,7 @@ def test_validation_error_never_exposes_ticket_pii_in_body_or_logs(client, caplo
 
 
 def test_classify_success(client, monkeypatch):
-    parsed = _ModelClassification(category="billing", urgency="medium", sentiment="negative", confidence=0.87, summary="Duplicate charge reported.")
+    parsed = _ModelClassification(category="billing", urgency="medium", sentiment="negative", confidence=0.87, summary="Duplicate charge reported.", tags=["duplicate_charge", "refund"])
     monkeypatch.setattr(main_module, "get_minimax_client", lambda cfg: FakeMiniMax(parsed=parsed.model_dump()))
 
     resp = client.post(
@@ -67,6 +67,7 @@ def test_classify_success(client, monkeypatch):
     assert body["ok"] is True
     assert body["data"]["category"] == "billing"
     assert body["data"]["confidence"] == 0.87
+    assert body["data"]["tags"] == ["duplicate_charge", "refund"]
     assert body["data"]["urgency"] == "medium"
     assert body["data"]["sentiment"] == "negative"
     assert body["data"]["summary"] == "Duplicate charge reported."

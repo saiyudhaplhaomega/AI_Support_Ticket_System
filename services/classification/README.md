@@ -62,20 +62,27 @@ Success response (`200`):
   "ok": true,
   "data": {
     "category": "billing",
+    "confidence": 0.92,
+    "tags": ["duplicate_charge", "refund"],
     "urgency": "medium",
     "sentiment": "negative",
-    "confidence": 0.92,
     "summary": "Customer reports a duplicate subscription charge.",
     "raw_model_output": { "provider": "minimax", "model": "MiniMax-M3", "id": "...", "usage": {...} }
   }
 }
 ```
 
-`category`, `urgency`, `sentiment`, `confidence`, and `summary` are validated
-from MiniMax JSON chat output. Invalid or non-JSON model output returns the
-standard error envelope; downstream automation never parses free text.
-`confidence` is the model's self-reported estimate (0-1); treat it as a
-routing heuristic, not a calibrated probability.
+`category`, `confidence`, and `tags` are the original published v1 fields
+(`capability-module-architecture.md` §3.1) and are always required —
+consumers built against the original contract keep working unchanged.
+`urgency`, `sentiment`, and `summary` are additive optional fields (§4 —
+"additive optional fields do not require a bump") added when chat moved to
+MiniMax; the service fills them on every call, but they should be treated as
+optional, not required. All six fields are validated from MiniMax JSON chat
+output. Invalid or non-JSON model output returns the standard error
+envelope; downstream automation never parses free text. `confidence` is the
+model's self-reported estimate (0-1); treat it as a routing heuristic, not a
+calibrated probability.
 
 ### `POST /ai/grounded-draft/v1`
 

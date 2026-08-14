@@ -32,10 +32,10 @@ Every module (regardless of family) exposes a contract with these five parts. Th
 ### 3.1 `ai.classify-ticket` (v1) — owned by RAG & AI Integration Engineer
 
 - **Input**: `{ "text": string, "context"?: object, "locale"?: string }`
-- **Output (success)**: `{ "category": string, "confidence": number (0-1), "tags": string[], "raw_model_output"?: object }` — structured, never free text as the primary field
+- **Output (success)**: `{ "category": string, "confidence": number (0-1), "tags": string[], "urgency"?: string, "sentiment"?: string, "summary"?: string, "raw_model_output"?: object }` — structured, never free text as the primary field. `category`, `confidence`, and `tags` are the original required fields; `urgency`, `sentiment`, and `summary` are additive optional fields (§4) added when the chat provider moved to MiniMax — the service fills them on every call in practice, but consumers must not treat them as required.
 - **Output (error)**: see shared error envelope §5
-- **Invocation**: internal HTTP service at `POST /ai/classify-ticket/v1`; n8n calls it with an HTTP Request node. Consumers never call Qdrant/OpenAI directly.
-- **Secrets**: the workflow receives only `AI_CLASSIFY_API_KEY` for service authentication. The service receives its Qdrant/OpenAI configuration from Infra; neither secret values nor direct upstream credentials are exposed to the workflow.
+- **Invocation**: internal HTTP service at `POST /ai/classify-ticket/v1`; n8n calls it with an HTTP Request node. Consumers never call Qdrant directly for embeddings or MiniMax directly for chat.
+- **Secrets**: the workflow receives only `AI_CLASSIFY_API_KEY` for service authentication. The service receives its Qdrant/OpenAI/MiniMax configuration from Infra; neither secret values nor direct upstream credentials are exposed to the workflow. Embeddings use `OPENAI_API_KEY` (model `text-embedding-3-small`); chat (classification and grounded draft replies) uses `MINIMAX_API_KEY` (model `MiniMax-M3`) — OpenAI is never called for chat.
 - **SLA**: synchronous, target < 5s p95, must return the error envelope (not throw) on timeout/model failure so the caller can route to a fallback/manual queue.
 
 ### 3.2 `ai.rag-lookup` (v1) — owned by RAG & AI Integration Engineer

@@ -9,7 +9,7 @@ from app.logging_utils import log_event
 from app.schemas import ClassifyTicketInput, ClassifyTicketOutputData, _ModelClassification
 INTERFACE_ID = "ai.classify-ticket"
 logger = logging.getLogger(__name__)
-_SYSTEM_PROMPT = "Return JSON only. Classify the ticket from the taxonomy. Fields: category, urgency (low|medium|high|critical), sentiment (negative|neutral|positive), confidence (0-1), summary. Do not invent facts."
+_SYSTEM_PROMPT = "Return JSON only. Classify the ticket from the taxonomy. Fields: category, urgency (low|medium|high|critical), sentiment (negative|neutral|positive), confidence (0-1), summary, tags (array of short free-form labels, e.g. 'refund', 'urgent'; [] if none apply). Do not invent facts."
 def _build_user_prompt(data, categories):
     parts=[f"Taxonomy (pick exactly one): {', '.join(categories)}"]
     if data.locale: parts.append(f"Locale: {data.locale}")
@@ -25,4 +25,4 @@ async def classify_ticket(minimax_client, settings: Settings, input_data: Classi
     except MiniMaxTimeoutError as exc: raise ModuleError(ErrorCode.UPSTREAM_TIMEOUT,"Classification model did not respond in time.",interface_id=INTERFACE_ID) from exc
     except (MiniMaxAPIError, ValidationError) as exc: raise ModuleError(ErrorCode.UPSTREAM_ERROR,"Classification model returned no structured output.",interface_id=INTERFACE_ID) from exc
     if parsed.category not in categories: log_event(logger,"warning","model returned category outside requested taxonomy",interface_id=INTERFACE_ID,correlation_id=correlation_id,category=parsed.category,taxonomy=categories)
-    return ClassifyTicketOutputData(category=parsed.category, urgency=parsed.urgency, sentiment=parsed.sentiment, confidence=max(0.0,min(1.0,parsed.confidence)), summary=parsed.summary, raw_model_output={"provider":"minimax","model":result["model"],"id":result["id"],"usage":result["usage"]})
+    return ClassifyTicketOutputData(category=parsed.category, confidence=max(0.0,min(1.0,parsed.confidence)), tags=parsed.tags, urgency=parsed.urgency, sentiment=parsed.sentiment, summary=parsed.summary, raw_model_output={"provider":"minimax","model":result["model"],"id":result["id"],"usage":result["usage"]})
