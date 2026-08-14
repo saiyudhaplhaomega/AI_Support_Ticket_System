@@ -15,7 +15,7 @@ the same way.
 
 ```sh
 cd infra
-cp .env.example .env   # fill in OPENAI_API_KEY, AI_CLASSIFY_API_KEY at minimum
+cp .env.example .env   # fill in OPENAI_API_KEY, MINIMAX_API_KEY, AI_CLASSIFY_API_KEY at minimum
 docker compose --profile classification-service up -d --build
 ```
 
@@ -62,18 +62,35 @@ Success response (`200`):
   "ok": true,
   "data": {
     "category": "billing",
+    "urgency": "medium",
+    "sentiment": "negative",
     "confidence": 0.92,
-    "tags": ["refund", "duplicate_charge"],
-    "raw_model_output": { "model": "gpt-4o-mini", "id": "...", "finish_reason": "stop", "usage": {...} }
+    "summary": "Customer reports a duplicate subscription charge.",
+    "raw_model_output": { "provider": "minimax", "model": "MiniMax-M3", "id": "...", "usage": {...} }
   }
 }
 ```
 
-`category`/`tags` come from a constrained structured-output call (OpenAI
-`response_format` JSON schema) — the model cannot return free text here, it
-either conforms to the schema or the call fails and you get an error
-envelope. `confidence` is the model's self-reported estimate (0-1); treat it
-as a routing heuristic, not a calibrated probability.
+`category`, `urgency`, `sentiment`, `confidence`, and `summary` are validated
+from MiniMax JSON chat output. Invalid or non-JSON model output returns the
+standard error envelope; downstream automation never parses free text.
+`confidence` is the model's self-reported estimate (0-1); treat it as a
+routing heuristic, not a calibrated probability.
+
+### `POST /ai/grounded-draft/v1`
+
+Creates a concise support reply using at most three supplied RAG matches. The
+service preserves source metadata as citations and sends the chat request to
+MiniMax, never OpenAI. With no retained matches it returns exactly
+`No specific policy found — this response is based on general knowledge.` and
+an empty citation list.
+
+```json
+{
+  "ticket_text": "I was charged twice for my subscription this month",
+  "matches": [{ "id": "kb-42", "score": 0.87, "content": "...", "metadata": { "source": "policies/refunds.md" } }]
+}
+```
 
 ### `POST /ai/rag-lookup/v1`
 
@@ -167,7 +184,12 @@ If omitted, one is generated per-request.
 ## Env vars
 
 Secrets (required, service refuses to start without them — see
-`app/config.py`): `OPENAI_API_KEY`, `AI_CLASSIFY_API_KEY`, and `QDRANT_URL`.
+`app/config.py`): `OPENAI_API_KEY`, `MINIMAX_API_KEY`, `AI_CLASSIFY_API_KEY`,
+and `QDRANT_URL`. OpenAI is used only for embeddings; MiniMax is used only for
+classification and grounded drafting. The explicit, validated defaults are
+`AI_EMBEDDING_PROVIDER=openai`,
+`AI_EMBEDDING_MODEL=text-embedding-3-small`, `AI_CHAT_PROVIDER=minimax`, and
+`AI_CHAT_MODEL=MiniMax-M3`.
 `AI_QDRANT_AUTH_ENABLED` defaults to `true`; in this mode
 `AI_QDRANT_API_KEY` is required and must be a short-lived, collection-scoped
 Qdrant JWT (`rw` for collections this service ingests into; `r` for query-only
@@ -187,13 +209,13 @@ override only what they need; nothing here is NOAVIA-specific.
 ```sh
 python3 -m venv .venv && . .venv/bin/activate
 pip install -r requirements-dev.txt
-OPENAI_API_KEY=sk-... AI_CLASSIFY_API_KEY=dev-secret QDRANT_URL=http://localhost:6333 \
+OPENAI_API_KEY=dev-openai-key MINIMAX_API_KEY=dev-minimax-key AI_CLASSIFY_API_KEY=dev-secret QDRANT_URL=http://localhost:6333 \
   AI_QDRANT_AUTH_ENABLED=false \
   uvicorn app.main:app --reload --port 8080
 ```
 
-Tests (mock the OpenAI/Qdrant clients — no network calls, no real keys
-needed):
+Tests mock the OpenAI embeddings, MiniMax chat, and Qdrant clients — no
+network calls or real keys are needed:
 
 ```sh
 pip install -r requirements-dev.txt
@@ -221,13 +243,12 @@ inventing an answer.
 
 ## Design notes for whoever touches this next
 
-- **Structured output, not prompt-and-hope.** Classification uses OpenAI's
-  `chat.completions.parse` against a Pydantic model
-  (`app/schemas.py::_ModelClassification`), so the model is constrained to
-  emit schema-conformant JSON. If you swap to a different OpenAI-compatible
-  provider via `AI_OPENAI_BASE_URL`, confirm it supports structured outputs
-  (`response_format: json_schema`) — most modern OpenAI-compatible gateways
-  do, but not all.
+- **Provider split is deliberate.** OpenAI supplies only inexpensive RAG
+  embeddings; MiniMax supplies classification and grounded drafting to reduce
+  chat operating cost. The service validates MiniMax JSON against
+  `app/schemas.py::_ModelClassification`; do not route chat through the
+  OpenAI embedding client or add provider fallback without a reviewed
+  configuration change.
 - **Point ids.** Qdrant requires point ids to be an unsigned int or a UUID;
   arbitrary caller-supplied strings aren't valid. `ingest_service._stable_id`
   deterministically maps any `id`/content string to a UUID via `uuid5`, so
