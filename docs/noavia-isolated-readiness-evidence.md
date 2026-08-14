@@ -1,8 +1,9 @@
 # NOAVIA isolated readiness evidence
 
-Status: partially live-validated, with external integrations deliberately
-unconfigured. This is a control-plane and local-fixture record, not a claim
-that Google Sheets, SMTP, OpenAI, or production Qdrant ingestion was tested.
+Status: partially live-validated, with delivery integrations configured but
+deliberately unexecuted. This is a control-plane and local-fixture record, not
+a claim that Google Sheets, Gmail, OpenAI, or production Qdrant ingestion was
+tested.
 
 ## Isolated n8n workspace — 2026-08-14
 
@@ -13,16 +14,27 @@ internal n8n endpoint. Workflow discovery returned exactly one workflow:
 | --- | --- |
 | ID | `udAuUv3ca0VPZdI8` |
 | Name | `workflow.noavia-ticket-pipeline.v1` |
-| Nodes | 24 |
+| Nodes | 26 |
 | Activation state | inactive |
 | Webhook path | `noavia/tickets/v1` |
 
 The imported workflow has the same node names and executable node
 configuration as `workflow/noavia/workflow.noavia-ticket-pipeline.v1.json`.
 n8n assigned its own `webhookId`; its empty `pinData` representation differs
-from the export, which is non-executable metadata. No activation or execution
-was attempted: the three delivery credentials remain placeholders and a live
-run could write a Sheet row or send email.
+from the export, which is non-executable metadata.
+
+On 2026-08-14, the owner manually selected the Gmail OAuth2 credential on
+`notify.routing-email.v1` and saved the workflow inactive. The repository
+artifact retains the Google Sheets OAuth2 binding on both
+`notify.google-sheets.v1` and the disabled
+`initialize.google-sheets-header.v1`. Its append-row mapping is structurally
+verified as the exact 16-column schema:
+
+`received_at,ticket_id,correlation_id,requester_email,subject,category,confidence,tags,route_queue,route_email,status,attachment_name,rag_match_count,rag_context,error_code,error_message`
+
+No activation or execution was attempted in this update. A live run could
+write a Sheet row or send email, so the Gmail binding remains owner-confirmed
+rather than execution-verified.
 
 ## Qdrant / knowledge-base — live ingestion 2026-08-14
 
@@ -64,10 +76,10 @@ All eight fictional Markdown sources ingested directly via Qdrant REST API:
 
 ```text
 python3 tests/test_noavia_workflow.py
-PASS: 24 nodes; validation envelope, audit telemetry, fallbacks, and delivery contracts present
+PASS: 26 nodes; validation envelope, audit telemetry, fallbacks, and delivery contracts present
 
 ./scripts/verify-baseline.sh
-PASS: 24 nodes; validation envelope, audit telemetry, fallbacks, and delivery contracts present
+PASS: 26 nodes; validation envelope, audit telemetry, fallbacks, and delivery contracts present
 ```
 
 ## Remaining owner / platform actions
@@ -85,10 +97,11 @@ PASS: 24 nodes; validation envelope, audit telemetry, fallbacks, and delivery co
    the classification service only (do not inject it into n8n). Re-ingest `knowledge-base/noavia` via the service
    to get production-quality embeddings. The collection name `noavia_kb_v1` and
    point count remain the same.
-3. **n8n credentials**: In n8n workspace, replace the three credential placeholders
-   with: Header Auth for webhook intake, least-privilege Google Sheets OAuth2
-   access to the intended test spreadsheet/tab, and SMTP access restricted to
-   the approved sender. Supply `config.rag_collection = noavia_kb_v1`.
+3. **n8n credentials**: The Sheets and Gmail OAuth2 bindings are selected in
+   the isolated workflow; before a live test, an owner must confirm the Header
+   Auth intake credential and that the selected Google identities retain only
+   the intended test spreadsheet/tab and approved sender access. Supply
+   `config.rag_collection = noavia_kb_v1`.
 4. **Live integration test** (owner approval required): With explicit approval
    for side effects, activate and test using a non-production Sheet and SMTP
    sink, then deactivate immediately after.

@@ -28,8 +28,10 @@ the Sheet. Delivery nodes continue into a final outcome check, which returns a
 2. Import the workflow JSON into n8n.
 3. Select a Header Auth credential for ingestion. The NOAVIA test export has
    its least-privilege Google Sheets OAuth2 credential bound to the storage
-   and disabled header-initialization nodes. Select the Gmail OAuth2
-   credential in the final empty Gmail dropdown before any controlled test.
+   and disabled header-initialization nodes. The isolated workflow also has
+   its Gmail OAuth2 credential selected on `notify.routing-email.v1`; keep the
+   workflow inactive until an owner approves a controlled, non-production
+   delivery test.
 4. The destination tab must have this exact 16-column header row:
 
    `received_at,ticket_id,correlation_id,requester_email,subject,category,confidence,tags,route_queue,route_email,status,attachment_name,rag_match_count,rag_context,error_code,error_message`
