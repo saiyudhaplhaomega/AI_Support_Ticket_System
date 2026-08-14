@@ -23,8 +23,16 @@ DEFAULT_TOP_K = 3
 DEFAULT_CONFIDENCE_THRESHOLD = 0.10
 _TOKEN_RE = re.compile(r"[a-z0-9]+")
 _STOP_WORDS = frozenset({
-    "a", "an", "and", "are", "for", "i", "in", "is", "it", "my", "of", "on", "or", "the", "to", "was", "we", "with", "you", "your",
+    "a", "an", "and", "are", "at", "be", "by", "can", "do", "for", "from", "has", "have", "how", "i", "in", "is", "it", "me", "my", "noavia", "not", "of", "on", "or", "our", "please", "the", "their", "them", "they", "this", "to", "was", "we", "what", "who", "will", "with", "you", "your",
 })
+_TOKEN_ALIASES = {
+    "alerts": "notification", "deleting": "delete", "deletion": "delete",
+    "expired": "expire", "expiry": "expire", "help": "support",
+    "notifications": "notification", "passwrod": "password", "recovery": "reset",
+    "targets": "target",
+    "rotate": "rotation", "rotating": "rotation", "tokn": "token",
+    "urgent": "urgency",
+}
 
 
 @dataclass(frozen=True)
@@ -144,19 +152,29 @@ def retrieve(query: str, embedder: Embedder, store: VectorStore, *, top_k: int =
         raise ValueError(f"top_k must be between 1 and {DEFAULT_TOP_K}")
     if not -1.0 <= threshold <= 1.0:
         raise ValueError("threshold must be between -1 and 1")
-    matches = store.search(embedder.embed(query), top_k)
+    # Ask the local/reference store for a bounded candidate set before ranking.
+    # A hash vector can put the best lexical match just outside its top three;
+    # the final public result is still strictly limited to ``top_k``.
+    candidates = store.search(embedder.embed(query), max(top_k, 64))
     # The hash embedding can collide on unrelated short queries.  A tiny
     # lexical grounding check/rerank is applied only after the vector baseline
     # was measured; it keeps every returned citation tied to query vocabulary.
     query_tokens = set(_tokens(query))
-    matches = sorted(matches, key=lambda item: (-(_lexical_overlap(query_tokens, item.content)), -item.score, item.id))
-    if not matches or matches[0].score < threshold or (threshold > 0 and _lexical_overlap(query_tokens, matches[0].content) < 2):
+    matches = sorted(
+        candidates,
+        key=lambda item: (-(_lexical_overlap(query_tokens, item.content)), -item.score, item.id),
+    )[:top_k]
+    if not matches or (threshold > 0 and _lexical_overlap(query_tokens, matches[0].content) < 2):
         return RetrievalResult(matches=[], low_confidence=True, fallback="manual_review")
     return RetrievalResult(matches=matches, low_confidence=False, fallback=None)
 
 
 def _tokens(text: str) -> list[str]:
-    return [token for token in _TOKEN_RE.findall(text.lower()) if token not in _STOP_WORDS]
+    return [
+        _TOKEN_ALIASES.get(token, token)
+        for token in _TOKEN_RE.findall(text.lower())
+        if token not in _STOP_WORDS
+    ]
 
 
 def _lexical_overlap(query_tokens: set[str], content: str) -> int:

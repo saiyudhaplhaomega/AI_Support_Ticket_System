@@ -68,6 +68,21 @@ def test_low_confidence_returns_no_context_and_manual_review_fallback():
     assert result.fallback == "manual_review"
 
 
+def test_hybrid_grounding_handles_fixture_terms_and_rejects_brand_only_queries():
+    root = Path(__file__).resolve().parents[3] / "knowledge-base" / "noavia"
+    embedder = DeterministicHashEmbedder()
+    store = InMemoryVectorStore()
+    ingest_directory(root, embedder, store)
+
+    supported = retrieve("tokn rotation for the API integration", embedder, store)
+    assert supported.low_confidence is False
+    assert supported.matches[0].metadata["source"] == "knowledge-base/noavia/api-token-rotation.md"
+
+    unsupported = retrieve("Can NOAVIA diagnose my medical symptoms?", embedder, store)
+    assert unsupported.matches == []
+    assert unsupported.low_confidence is True
+
+
 def test_upsert_replaces_a_chunk_and_retrieve_validates_contract():
     store = InMemoryVectorStore()
     chunk = DocumentChunk("same", "first", {})

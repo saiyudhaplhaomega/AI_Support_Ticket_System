@@ -4,8 +4,10 @@
 
 `workflow.noavia-ticket-pipeline.v1` (`udAuUv3ca0VPZdI8`) is exported with
 `active: false` and was not executed for this release. The portal is explicitly
-test-mode only. Its private server route forwards to n8n; browser code contains
-no webhook token, OAuth credential, API key, recipient, or sender control.
+test-mode only: test mode returns before making an n8n request. Only the
+owner-authorized controlled-live mode may use its private server route to
+forward to n8n; browser code contains no webhook token, OAuth credential, API
+key, recipient, or sender control.
 
 In test mode, the workflow accepts only `NOAVIA Support Tickets - Test`, and
 Google Sheets/Gmail credential bindings remain configured-but-unexecuted.
@@ -42,12 +44,9 @@ The 40-case fixture is `evals/noavia_rag_eval.jsonl`; run
 `python3 evals/run_noavia_rag_eval.py`. It writes the reproducible machine
 result to `evals/noavia_rag_eval_results.json` without credentials.
 
-The initial pure deterministic-vector baseline measured Recall@3 93.75%,
-Top-1 65.63%, MRR 0.786, and unsupported fallback 0%; hash collisions created
-eight false-confidence unsupported answers. The smallest evidence-led change
-was a lexical grounding gate/rerank after baseline measurement. The recommended
-threshold remains 0.10 plus at least two grounded query terms in the returned
-source, which rejects collision-only queries while retaining cited support
-requests. The current result file records the final metrics and score
-distributions. Hybrid retrieval, external embeddings, reranking services, and
-metadata filtering were not added.
+The current deterministic hybrid result is Recall@3 100%, Top-1 90.62%, MRR
+0.9531, and unsupported fallback 100%, with no false-confidence cases. The
+local path uses bounded hash-vector candidates followed by lexical grounding and
+fixture-driven term normalization. The threshold remains 0.10 plus at least two
+grounded query terms in the returned source. External embeddings, hosted
+reranking services, and production metadata filtering remain unexecuted.

@@ -2,24 +2,22 @@
   "threshold": 0.1,
   "case_count": 40,
   "metrics": {
-    "recall_at_3": 0.7188,
-    "top_1_accuracy": 0.6562,
-    "mean_reciprocal_rank": 0.6875,
-    "unsupported_fallback_accuracy": 0.875,
-    "false_confidence_cases": [
-      "unsupported-3"
-    ],
+    "recall_at_3": 1.0,
+    "top_1_accuracy": 0.9062,
+    "mean_reciprocal_rank": 0.9531,
+    "unsupported_fallback_accuracy": 1.0,
+    "false_confidence_cases": [],
     "supported_top_score_distribution": {
-      "min": 0,
-      "median": 0.206223,
-      "max": 0.454859,
-      "mean": 0.198201
+      "min": 0.137604,
+      "median": 0.225769,
+      "max": 0.50374,
+      "mean": 0.26674
     },
     "unsupported_top_score_distribution": {
       "min": 0,
       "median": 0.0,
-      "max": 0.174714,
-      "mean": 0.021839
+      "max": 0,
+      "mean": 0.0
     }
   },
   "cases": [
@@ -32,12 +30,12 @@
       "sources": [
         "knowledge-base/noavia/password-reset.md",
         "knowledge-base/noavia/knowledge-search.md",
-        "knowledge-base/noavia/priority-and-sla.md"
+        "knowledge-base/noavia/api-token-rotation.md"
       ],
       "scores": [
-        0.361678,
-        0.12792,
-        0.136004
+        0.435143,
+        0.073721,
+        0.0
       ],
       "fallback": false,
       "first_relevant_rank": 1,
@@ -52,12 +50,12 @@
       "sources": [
         "knowledge-base/noavia/password-reset.md",
         "knowledge-base/noavia/data-retention.md",
-        "knowledge-base/noavia/csv-import.md"
+        "knowledge-base/noavia/priority-and-sla.md"
       ],
       "scores": [
-        0.220564,
-        0.209795,
-        0.19245
+        0.384615,
+        0.17609,
+        0.039284
       ],
       "fallback": false,
       "first_relevant_rank": 1,
@@ -72,12 +70,12 @@
       "sources": [
         "knowledge-base/noavia/password-reset.md",
         "knowledge-base/noavia/email-notifications.md",
-        "knowledge-base/noavia/knowledge-search.md"
+        "knowledge-base/noavia/data-retention.md"
       ],
       "scores": [
-        0.404368,
-        0.138675,
-        0.047673
+        0.384615,
+        0.049029,
+        0.044023
       ],
       "fallback": false,
       "first_relevant_rank": 1,
@@ -89,11 +87,19 @@
       "expected_sources": [
         "knowledge-base/noavia/password-reset.md"
       ],
-      "sources": [],
-      "scores": [],
-      "fallback": true,
-      "first_relevant_rank": null,
-      "passed": false
+      "sources": [
+        "knowledge-base/noavia/password-reset.md",
+        "knowledge-base/noavia/api-token-rotation.md",
+        "knowledge-base/noavia/email-notifications.md"
+      ],
+      "scores": [
+        0.290742,
+        0.07175,
+        0.037062
+      ],
+      "fallback": false,
+      "first_relevant_rank": 1,
+      "passed": true
     },
     {
       "id": "duplicate-1",
@@ -107,9 +113,9 @@
         "knowledge-base/noavia/csv-import.md"
       ],
       "scores": [
-        0.220971,
-        0.114043,
-        0.096225
+        0.232119,
+        0.235702,
+        0.100504
       ],
       "fallback": false,
       "first_relevant_rank": 1,
@@ -127,9 +133,9 @@
         "knowledge-base/noavia/data-retention.md"
       ],
       "scores": [
-        0.15625,
-        0.161281,
-        0.089009
+        0.164133,
+        0.166667,
+        0.093386
       ],
       "fallback": false,
       "first_relevant_rank": 1,
@@ -143,14 +149,14 @@
         "knowledge-base/noavia/email-notifications.md"
       ],
       "sources": [
-        "knowledge-base/noavia/duplicate-charge.md",
         "knowledge-base/noavia/email-notifications.md",
+        "knowledge-base/noavia/duplicate-charge.md",
         "knowledge-base/noavia/password-reset.md"
       ],
       "scores": [
-        0.319801,
-        0.306622,
-        0.310346
+        0.310087,
+        0.29361,
+        0.291903
       ],
       "fallback": false,
       "first_relevant_rank": 1,
@@ -164,13 +170,13 @@
       ],
       "sources": [
         "knowledge-base/noavia/duplicate-charge.md",
-        "knowledge-base/noavia/csv-import.md",
-        "knowledge-base/noavia/email-notifications.md"
+        "knowledge-base/noavia/knowledge-search.md",
+        "knowledge-base/noavia/password-reset.md"
       ],
       "scores": [
-        0.216506,
-        0.157135,
-        0.113228
+        0.265334,
+        0.127688,
+        0.125615
       ],
       "fallback": false,
       "first_relevant_rank": 1,
@@ -185,12 +191,12 @@
       "sources": [
         "knowledge-base/noavia/csv-import.md",
         "knowledge-base/noavia/data-retention.md",
-        "knowledge-base/noavia/email-notifications.md"
+        "knowledge-base/noavia/password-reset.md"
       ],
       "scores": [
-        0.363696,
-        0.285463,
-        0.174714
+        0.351763,
+        0.132068,
+        0.115385
       ],
       "fallback": false,
       "first_relevant_rank": 1,
@@ -208,9 +214,9 @@
         "knowledge-base/noavia/priority-and-sla.md"
       ],
       "scores": [
-        0.215166,
-        0.112588,
-        0.068002
+        0.224733,
+        0.118125,
+        0.070273
       ],
       "fallback": false,
       "first_relevant_rank": 1,
@@ -224,13 +230,13 @@
       ],
       "sources": [
         "knowledge-base/noavia/csv-import.md",
-        "knowledge-base/noavia/email-notifications.md",
-        "knowledge-base/noavia/api-token-rotation.md"
+        "knowledge-base/noavia/api-token-rotation.md",
+        "knowledge-base/noavia/priority-and-sla.md"
       ],
       "scores": [
-        0.235702,
-        0.188713,
-        0.15162
+        0.224733,
+        0.127343,
+        0.105409
       ],
       "fallback": false,
       "first_relevant_rank": 1,
@@ -248,9 +254,9 @@
         "knowledge-base/noavia/duplicate-charge.md"
       ],
       "scores": [
-        0.170103,
-        0.107521,
-        0.09375
+        0.177667,
+        0.111111,
+        0.09848
       ],
       "fallback": false,
       "first_relevant_rank": 1,
@@ -263,14 +269,14 @@
         "knowledge-base/noavia/data-retention.md"
       ],
       "sources": [
-        "knowledge-base/noavia/priority-and-sla.md",
+        "knowledge-base/noavia/csv-import.md",
         "knowledge-base/noavia/data-retention.md",
-        "knowledge-base/noavia/csv-import.md"
+        "knowledge-base/noavia/api-token-rotation.md"
       ],
       "scores": [
-        0.287361,
-        0.190308,
-        0.181848
+        0.224733,
+        0.196875,
+        0.212238
       ],
       "fallback": false,
       "first_relevant_rank": 2,
@@ -282,11 +288,19 @@
       "expected_sources": [
         "knowledge-base/noavia/data-retention.md"
       ],
-      "sources": [],
-      "scores": [],
-      "fallback": true,
-      "first_relevant_rank": null,
-      "passed": false
+      "sources": [
+        "knowledge-base/noavia/data-retention.md",
+        "knowledge-base/noavia/password-reset.md",
+        "knowledge-base/noavia/knowledge-search.md"
+      ],
+      "scores": [
+        0.220113,
+        0.115385,
+        0.104257
+      ],
+      "fallback": false,
+      "first_relevant_rank": 1,
+      "passed": true
     },
     {
       "id": "retention-3",
@@ -296,17 +310,17 @@
       ],
       "sources": [
         "knowledge-base/noavia/knowledge-search.md",
-        "knowledge-base/noavia/email-notifications.md",
-        "knowledge-base/noavia/csv-import.md"
+        "knowledge-base/noavia/data-retention.md",
+        "knowledge-base/noavia/email-notifications.md"
       ],
       "scores": [
-        0.341121,
-        0.206725,
-        0.129099
+        0.208514,
+        0.044023,
+        0.147087
       ],
       "fallback": false,
-      "first_relevant_rank": null,
-      "passed": false
+      "first_relevant_rank": 2,
+      "passed": true
     },
     {
       "id": "retention-4",
@@ -316,13 +330,13 @@
       ],
       "sources": [
         "knowledge-base/noavia/data-retention.md",
-        "knowledge-base/noavia/password-reset.md",
-        "knowledge-base/noavia/priority-and-sla.md"
+        "knowledge-base/noavia/priority-and-sla.md",
+        "knowledge-base/noavia/password-reset.md"
       ],
       "scores": [
-        0.187647,
-        0.230159,
-        0.204006
+        0.196875,
+        0.245955,
+        0.240807
       ],
       "fallback": false,
       "first_relevant_rank": 1,
@@ -337,12 +351,12 @@
       "sources": [
         "knowledge-base/noavia/email-notifications.md",
         "knowledge-base/noavia/password-reset.md",
-        "knowledge-base/noavia/data-retention.md"
+        "knowledge-base/noavia/csv-import.md"
       ],
       "scores": [
-        0.174714,
-        0.166731,
-        0.190308
+        0.263117,
+        0.172005,
+        0.044947
       ],
       "fallback": false,
       "first_relevant_rank": 1,
@@ -354,11 +368,19 @@
       "expected_sources": [
         "knowledge-base/noavia/email-notifications.md"
       ],
-      "sources": [],
-      "scores": [],
-      "fallback": true,
-      "first_relevant_rank": null,
-      "passed": false
+      "sources": [
+        "knowledge-base/noavia/email-notifications.md",
+        "knowledge-base/noavia/password-reset.md",
+        "knowledge-base/noavia/knowledge-search.md"
+      ],
+      "scores": [
+        0.294174,
+        0.115385,
+        0.104257
+      ],
+      "fallback": false,
+      "first_relevant_rank": 1,
+      "passed": true
     },
     {
       "id": "email-3",
@@ -372,9 +394,9 @@
         "knowledge-base/noavia/duplicate-charge.md"
       ],
       "scores": [
-        0.197279,
-        0.206725,
-        0.158114
+        0.137604,
+        0.219265,
+        0.083045
       ],
       "fallback": false,
       "first_relevant_rank": 2,
@@ -390,12 +412,12 @@
       "sources": [
         "knowledge-base/noavia/password-reset.md",
         "knowledge-base/noavia/email-notifications.md",
-        "knowledge-base/noavia/priority-and-sla.md"
+        "knowledge-base/noavia/data-retention.md"
       ],
       "scores": [
-        0.305674,
-        0.139771,
-        0.143681
+        0.319816,
+        0.259437,
+        0.066556
       ],
       "fallback": false,
       "first_relevant_rank": 1,
@@ -409,13 +431,13 @@
       ],
       "sources": [
         "knowledge-base/noavia/knowledge-search.md",
-        "knowledge-base/noavia/data-retention.md",
-        "knowledge-base/noavia/csv-import.md"
+        "knowledge-base/noavia/password-reset.md",
+        "knowledge-base/noavia/data-retention.md"
       ],
       "scores": [
-        0.180187,
-        0.190308,
-        0.109109
+        0.212814,
+        0.062807,
+        0.179721
       ],
       "fallback": false,
       "first_relevant_rank": 1,
@@ -427,11 +449,19 @@
       "expected_sources": [
         "knowledge-base/noavia/knowledge-search.md"
       ],
-      "sources": [],
-      "scores": [],
-      "fallback": true,
-      "first_relevant_rank": null,
-      "passed": false
+      "sources": [
+        "knowledge-base/noavia/knowledge-search.md",
+        "knowledge-base/noavia/duplicate-charge.md",
+        "knowledge-base/noavia/data-retention.md"
+      ],
+      "scores": [
+        0.156386,
+        0.185695,
+        0.17609
+      ],
+      "fallback": false,
+      "first_relevant_rank": 1,
+      "passed": true
     },
     {
       "id": "search-3",
@@ -440,18 +470,18 @@
         "knowledge-base/noavia/knowledge-search.md"
       ],
       "sources": [
+        "knowledge-base/noavia/knowledge-search.md",
         "knowledge-base/noavia/duplicate-charge.md",
-        "knowledge-base/noavia/data-retention.md",
-        "knowledge-base/noavia/csv-import.md"
+        "knowledge-base/noavia/data-retention.md"
       ],
       "scores": [
-        0.167038,
-        0.15859,
-        0.145479
+        0.157622,
+        0.175466,
+        0.16639
       ],
       "fallback": false,
-      "first_relevant_rank": null,
-      "passed": false
+      "first_relevant_rank": 1,
+      "passed": true
     },
     {
       "id": "search-4",
@@ -465,9 +495,9 @@
         "knowledge-base/noavia/password-reset.md"
       ],
       "scores": [
-        0.341121,
-        0.187006,
-        0.164399
+        0.334855,
+        0.180246,
+        0.141179
       ],
       "fallback": false,
       "first_relevant_rank": 1,
@@ -479,11 +509,19 @@
       "expected_sources": [
         "knowledge-base/noavia/api-token-rotation.md"
       ],
-      "sources": [],
-      "scores": [],
-      "fallback": true,
-      "first_relevant_rank": null,
-      "passed": false
+      "sources": [
+        "knowledge-base/noavia/api-token-rotation.md",
+        "knowledge-base/noavia/priority-and-sla.md",
+        "knowledge-base/noavia/knowledge-search.md"
+      ],
+      "scores": [
+        0.382029,
+        0.070273,
+        0.09325
+      ],
+      "fallback": false,
+      "first_relevant_rank": 1,
+      "passed": true
     },
     {
       "id": "api-2",
@@ -494,12 +532,12 @@
       "sources": [
         "knowledge-base/noavia/api-token-rotation.md",
         "knowledge-base/noavia/knowledge-search.md",
-        "knowledge-base/noavia/password-reset.md"
+        "knowledge-base/noavia/data-retention.md"
       ],
       "scores": [
-        0.189525,
-        0.116775,
-        0.18009
+        0.169791,
+        0.139876,
+        0.039375
       ],
       "fallback": false,
       "first_relevant_rank": 1,
@@ -513,13 +551,13 @@
       ],
       "sources": [
         "knowledge-base/noavia/api-token-rotation.md",
-        "knowledge-base/noavia/csv-import.md",
-        "knowledge-base/noavia/email-notifications.md"
+        "knowledge-base/noavia/password-reset.md",
+        "knowledge-base/noavia/priority-and-sla.md"
       ],
       "scores": [
-        0.454859,
-        0.157135,
-        0.15097
+        0.466924,
+        0.068802,
+        0.140546
       ],
       "fallback": false,
       "first_relevant_rank": 1,
@@ -531,11 +569,19 @@
       "expected_sources": [
         "knowledge-base/noavia/api-token-rotation.md"
       ],
-      "sources": [],
-      "scores": [],
-      "fallback": true,
-      "first_relevant_rank": null,
-      "passed": false
+      "sources": [
+        "knowledge-base/noavia/api-token-rotation.md",
+        "knowledge-base/noavia/priority-and-sla.md",
+        "knowledge-base/noavia/knowledge-search.md"
+      ],
+      "scores": [
+        0.50374,
+        0.160375,
+        0.085126
+      ],
+      "fallback": false,
+      "first_relevant_rank": 1,
+      "passed": true
     },
     {
       "id": "sla-1",
@@ -545,13 +591,13 @@
       ],
       "sources": [
         "knowledge-base/noavia/priority-and-sla.md",
-        "knowledge-base/noavia/duplicate-charge.md",
-        "knowledge-base/noavia/csv-import.md"
+        "knowledge-base/noavia/password-reset.md",
+        "knowledge-base/noavia/email-notifications.md"
       ],
       "scores": [
-        0.21727,
-        0.144338,
-        0.117851
+        0.210819,
+        0.103203,
+        0.087706
       ],
       "fallback": false,
       "first_relevant_rank": 1,
@@ -565,13 +611,13 @@
       ],
       "sources": [
         "knowledge-base/noavia/priority-and-sla.md",
-        "knowledge-base/noavia/knowledge-search.md",
-        "knowledge-base/noavia/api-token-rotation.md"
+        "knowledge-base/noavia/csv-import.md",
+        "knowledge-base/noavia/data-retention.md"
       ],
       "scores": [
-        0.172417,
-        0.14415,
-        0.140372
+        0.19245,
+        0.123091,
+        0.107833
       ],
       "fallback": false,
       "first_relevant_rank": 1,
@@ -583,11 +629,19 @@
       "expected_sources": [
         "knowledge-base/noavia/priority-and-sla.md"
       ],
-      "sources": [],
-      "scores": [],
-      "fallback": true,
-      "first_relevant_rank": null,
-      "passed": false
+      "sources": [
+        "knowledge-base/noavia/priority-and-sla.md",
+        "knowledge-base/noavia/duplicate-charge.md",
+        "knowledge-base/noavia/knowledge-search.md"
+      ],
+      "scores": [
+        0.210819,
+        0.124568,
+        0.046625
+      ],
+      "fallback": false,
+      "first_relevant_rank": 1,
+      "passed": true
     },
     {
       "id": "sla-4",
@@ -598,12 +652,12 @@
       "sources": [
         "knowledge-base/noavia/priority-and-sla.md",
         "knowledge-base/noavia/csv-import.md",
-        "knowledge-base/noavia/api-token-rotation.md"
+        "knowledge-base/noavia/duplicate-charge.md"
       ],
       "scores": [
-        0.241423,
-        0.111111,
-        0.107211
+        0.226805,
+        0.116052,
+        0.080408
       ],
       "fallback": false,
       "first_relevant_rank": 1,
@@ -633,19 +687,11 @@
       "id": "unsupported-3",
       "expected_fallback": true,
       "expected_sources": [],
-      "sources": [
-        "knowledge-base/noavia/email-notifications.md",
-        "knowledge-base/noavia/password-reset.md",
-        "knowledge-base/noavia/priority-and-sla.md"
-      ],
-      "scores": [
-        0.174714,
-        0.111154,
-        0.114944
-      ],
-      "fallback": false,
+      "sources": [],
+      "scores": [],
+      "fallback": true,
       "first_relevant_rank": null,
-      "passed": false
+      "passed": true
     },
     {
       "id": "unsupported-4",
