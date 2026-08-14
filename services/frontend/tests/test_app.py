@@ -14,9 +14,24 @@ client = TestClient(app)
 
 def test_test_mode_accepts_dummy_ticket_without_network(monkeypatch):
     monkeypatch.setenv("NOAVIA_TEST_MODE", "true")
+    class NetworkMustNotRun:
+        def __init__(self, *args, **kwargs):
+            raise AssertionError("test mode must not create an HTTP client")
+
+    monkeypatch.setattr("app.httpx.AsyncClient", NetworkMustNotRun)
     response = client.post("/api/tickets", json={"name": "Ada", "email": "ada@example.com", "subject": "Help", "message": "Test ticket"})
     assert response.status_code == 200
-    assert response.json()["mode"] == "test"
+    body = response.json()
+    assert body["mode"] == "test"
+    assert body["ticket_id"] == "DEMO-0001"
+    assert body["demo"]["classification"]["category"] == "account_access"
+    assert len(body["demo"]["rag"]["sources"]) == 3
+    assert body["demo"]["rag"]["sources"][0]["retrieval_score"] == 0.93
+    assert body["demo"]["rag"]["fallback"]["used"] is False
+    assert body["demo"]["routing"]["queue"] == "account-support"
+    assert body["demo"]["manual_review"]["required"] is False
+    assert body["demo"]["processing_log"][-1]["status"] == "skipped"
+    assert body["demo"]["internal_draft_reply"]["visibility"] == "internal_draft_only"
 
 
 def test_invalid_email_and_non_pdf_are_rejected():

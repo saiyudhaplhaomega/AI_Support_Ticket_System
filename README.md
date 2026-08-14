@@ -71,11 +71,20 @@ The repository contract check can be run offline with `./scripts/verify-baseline
 
 ## NOAVIA test portal
 
-Run `docker compose --profile frontend up --build`, then use the internal
-frontend service through the reverse-proxy route configured by the deployer.
+For a local demonstration without Docker or secrets, run this from the repository root:
+
+```sh
+NOAVIA_TEST_MODE=true uvicorn app:app --app-dir services/frontend --host 127.0.0.1 --port 8081
+```
+
+Open `http://127.0.0.1:8081/`, submit any valid dummy ticket, then stop it with `Ctrl-C`. The result is deterministic (`DEMO-0001`) and visibly includes mock classification JSON, three RAG sources and scores, fallback/routing/manual-review decisions, a processing log, and an **internal-draft-only** reply. The submitted details are discarded. In this mode no network call is made to Gmail, Google Sheets, n8n, model providers, or Qdrant; it needs no secrets or customer data.
+
+Run all repository checks, including the existing script-style workflow check, with `./scripts/test.sh` from the repository root.
+
+For container use, run `docker compose --profile frontend up --build`, then use
+the internal frontend service through the reverse-proxy route configured by the deployer.
 `NOAVIA_TEST_MODE=true` is the default: the form validates name, email, subject,
-message, and an optional PDF, returns a dummy success result, and makes no
-n8n, Google Sheets, or Gmail request. Browser code contains no webhook URL or
+message, and an optional PDF. Browser code contains no webhook URL or
 credential. Only an owner-approved controlled test may set the private
 `NOAVIA_N8N_INTERNAL_WEBHOOK_URL` and disable test mode; it must match the
 exact server-only `NOAVIA_N8N_INTERNAL_ALLOWED_ORIGIN` (default
