@@ -16,11 +16,12 @@ def test_classify_input_accepts_minimal():
 
 
 def test_classify_output_confidence_bounds():
+    base = dict(category="billing", urgency="low", sentiment="neutral", summary="refund question")
     with pytest.raises(ValidationError):
-        ClassifyTicketOutputData(category="billing", confidence=1.5, tags=[])
+        ClassifyTicketOutputData(**base, confidence=1.5)
     with pytest.raises(ValidationError):
-        ClassifyTicketOutputData(category="billing", confidence=-0.1, tags=[])
-    ok = ClassifyTicketOutputData(category="billing", confidence=0.9, tags=["refund"])
+        ClassifyTicketOutputData(**base, confidence=-0.1)
+    ok = ClassifyTicketOutputData(**base, confidence=0.9)
     assert ok.confidence == 0.9
 
 

@@ -125,11 +125,18 @@ def test_rag_lookup_unknown_collection_returns_empty_matches(client, monkeypatch
 
 def test_rag_upstream_error_never_exposes_provider_details_in_body_or_logs(client, monkeypatch, caplog):
     secret = "provider-secret-should-not-leak"
+    # ApiException's constructor doesn't accept status/reason kwargs (they're
+    # set as plain attributes by the qdrant-client transport layer); assign
+    # them after construction so the app code's `getattr(exc, "status", ...)`
+    # still works without the secret ever landing in str(exc).
+    upstream_exc = ApiException("upstream error")
+    upstream_exc.status = 502
+    upstream_exc.reason = secret
     monkeypatch.setattr(main_module, "get_openai_client", lambda cfg: FakeOpenAI())
     monkeypatch.setattr(
         main_module,
         "get_qdrant_client",
-        lambda cfg: FakeQdrant(query_exc=ApiException(status=502, reason=secret)),
+        lambda cfg: FakeQdrant(query_exc=upstream_exc),
     )
 
     with caplog.at_level("ERROR"):
