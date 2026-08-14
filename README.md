@@ -77,8 +77,11 @@ frontend service through the reverse-proxy route configured by the deployer.
 message, and an optional PDF, returns a dummy success result, and makes no
 n8n, Google Sheets, or Gmail request. Browser code contains no webhook URL or
 credential. Only an owner-approved controlled test may set the private
-`NOAVIA_N8N_INTERNAL_WEBHOOK_URL` and disable test mode; the workflow stays
-inactive until that approval.
+`NOAVIA_N8N_INTERNAL_WEBHOOK_URL` and disable test mode; it must match the
+exact server-only `NOAVIA_N8N_INTERNAL_ALLOWED_ORIGIN` (default
+`http://n8n:5678`). URLs with credentials, IP addresses, query strings, or
+fragments are rejected, and private-service network failures return a
+sanitized 502 response. The workflow stays inactive until that approval.
 
 For RAG baseline measurement run `python3 evals/noavia_rag_eval.py`; see
 `docs/noavia-rag-evaluation.md` for committed metrics and limitations.

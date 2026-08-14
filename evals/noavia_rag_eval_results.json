@@ -10,13 +10,13 @@
       "unsupported-3"
     ],
     "supported_top_score_distribution": {
-      "min": 0.0,
-      "median": 0.215166,
+      "min": 0,
+      "median": 0.206223,
       "max": 0.454859,
       "mean": 0.198201
     },
     "unsupported_top_score_distribution": {
-      "min": 0.0,
+      "min": 0,
       "median": 0.0,
       "max": 0.174714,
       "mean": 0.021839

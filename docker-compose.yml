@@ -171,5 +171,6 @@ services:
     environment:
       - NOAVIA_TEST_MODE=${NOAVIA_TEST_MODE:-true}
       - NOAVIA_N8N_INTERNAL_WEBHOOK_URL=${NOAVIA_N8N_INTERNAL_WEBHOOK_URL:-}
+      - NOAVIA_N8N_INTERNAL_ALLOWED_ORIGIN=${NOAVIA_N8N_INTERNAL_ALLOWED_ORIGIN:-http://n8n:5678}
     networks:
       - saas-internal

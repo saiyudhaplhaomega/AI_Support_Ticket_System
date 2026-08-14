@@ -2,9 +2,11 @@
 from __future__ import annotations
 
 import base64
+import ipaddress
 import os
 import re
 from pathlib import Path
+from urllib.parse import urlsplit
 from uuid import uuid4
 
 import httpx
@@ -31,6 +33,37 @@ def test_mode() -> bool:
     return os.getenv("NOAVIA_TEST_MODE", "true").lower() == "true"
 
 
+def internal_webhook_target() -> str:
+    """Return the explicitly approved internal n8n origin or fail closed."""
+    target = os.getenv("NOAVIA_N8N_INTERNAL_WEBHOOK_URL", "").strip()
+    approved_origin = os.getenv(
+        "NOAVIA_N8N_INTERNAL_ALLOWED_ORIGIN", "http://n8n:5678"
+    ).strip().rstrip("/")
+    if not target:
+        raise HTTPException(503, "Submission is disabled until an internal workflow endpoint is configured.")
+    parsed_target = urlsplit(target)
+    parsed_origin = urlsplit(approved_origin)
+    if (
+        not parsed_target.scheme
+        or not parsed_target.hostname
+        or parsed_target.username
+        or parsed_target.password
+        or parsed_target.query
+        or parsed_target.fragment
+        or parsed_target.scheme != parsed_origin.scheme
+        or parsed_target.netloc.lower() != parsed_origin.netloc.lower()
+        or parsed_origin.path
+        or parsed_origin.query
+        or parsed_origin.fragment
+    ):
+        raise HTTPException(503, "Submission is disabled until an approved internal workflow endpoint is configured.")
+    try:
+        ipaddress.ip_address(parsed_target.hostname)
+    except ValueError:
+        return target
+    raise HTTPException(503, "Submission is disabled until an approved internal workflow endpoint is configured.")
+
+
 async def submit(ticket: Ticket) -> dict:
     if not EMAIL.match(ticket.email):
         raise HTTPException(422, "Enter a valid email address.")
@@ -46,13 +79,14 @@ async def submit(ticket: Ticket) -> dict:
     ticket_id = f"TEST-{uuid4().hex[:10].upper()}"
     if test_mode():
         return {"ok": True, "ticket_id": ticket_id, "mode": "test", "message": "Test ticket accepted; nothing was sent."}
-    target = os.getenv("NOAVIA_N8N_INTERNAL_WEBHOOK_URL", "").strip()
-    if not target:
-        raise HTTPException(503, "Submission is disabled until an internal workflow endpoint is configured.")
+    target = internal_webhook_target()
     payload = {"ticket_id": ticket_id, "subject": ticket.subject, "body": ticket.message,
                "requester_email": ticket.email, "requester_name": ticket.name}
-    async with httpx.AsyncClient(timeout=10) as client:
-        response = await client.post(target, json=payload)
+    try:
+        async with httpx.AsyncClient(timeout=10) as client:
+            response = await client.post(target, json=payload)
+    except httpx.RequestError as exc:
+        raise HTTPException(502, "The private ticket service could not accept the request.") from exc
     if response.is_error:
         raise HTTPException(502, "The private ticket service could not accept the request.")
     return {"ok": True, "ticket_id": ticket_id, "mode": "controlled-live", "message": "Ticket accepted."}

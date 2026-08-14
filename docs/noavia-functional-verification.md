@@ -13,6 +13,12 @@ Gmail routes only to the server-side `NOAVIA_NOTIFY_ROUTE_ALLOWLIST_JSON` sink;
 ticket fields and nested `config` are ignored for routing and cannot set a
 sender. No customer-facing draft-email path exists.
 
+When an owner authorizes controlled-live mode, the server allows a webhook URL
+only when its origin exactly matches the server-side
+`NOAVIA_N8N_INTERNAL_ALLOWED_ORIGIN` (default `http://n8n:5678`). It rejects
+URLs with credentials, IP addresses, queries, or fragments, and converts
+private-service connection errors into a sanitized 502 response.
+
 Run locally with `docker compose --profile frontend --profile classification-service up --build`.
 Open `https://$N8N_PUBLIC_DOMAIN/noavia/`. Do not activate the workflow or
 submit a test until an owner approves the controlled side effects.
