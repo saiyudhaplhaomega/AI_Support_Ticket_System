@@ -1,8 +1,12 @@
-import sys
+import importlib.util
 from pathlib import Path
-sys.path.insert(0, str(Path(__file__).parent))
 from fastapi.testclient import TestClient
-import app as portal
+
+_APP_PATH = Path(__file__).with_name("app.py")
+_SPEC = importlib.util.spec_from_file_location("noavia_frontend_app", _APP_PATH)
+assert _SPEC and _SPEC.loader
+portal = importlib.util.module_from_spec(_SPEC)
+_SPEC.loader.exec_module(portal)
 
 client = TestClient(portal.app)
 
