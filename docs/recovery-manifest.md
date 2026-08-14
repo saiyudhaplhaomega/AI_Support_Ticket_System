@@ -49,5 +49,6 @@ an offline verification wrapper.
   policy also excludes runtime data, volumes, caches, Python bytecode, and
   generated test artifacts; none are tracked in this baseline.
 - The recovered artifact commit is `ebd1c93`; the access-runbook commit is
-  `85c52f4`. Publication remains pending a GitHub credential for the canonical
-  remote.
+  `85c52f4`. At the time of recovery, publication was pending a GitHub
+  credential. This historical note is superseded by the current release
+  handoff and does not describe the present remote state.

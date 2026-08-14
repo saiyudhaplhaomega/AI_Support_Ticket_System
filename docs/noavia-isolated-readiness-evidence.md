@@ -5,9 +5,9 @@ deliberately unexecuted. This is a control-plane and local-fixture record, not
 a claim that Google Sheets, Gmail, OpenAI, or production Qdrant ingestion was
 tested.
 
-Repository baseline verification: `origin/main` resolved to
-`e8ef9bd2daacf08a0fcbf412be036988ae78df1a` on 2026-08-14. This is a recorded
-baseline SHA, not an instruction to push or activate anything.
+Repository baseline verification is recorded in the release handoff rather
+than duplicated here. This evidence describes the observed control-plane and
+local-fixture state; it is not an instruction to push or activate anything.
 
 ## Isolated n8n workspace — 2026-08-14
 
