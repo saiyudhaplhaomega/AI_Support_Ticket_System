@@ -79,8 +79,6 @@ services:
       # notify.* output nodes
       - GOOGLE_SHEETS_CLIENT_ID=${GOOGLE_SHEETS_CLIENT_ID}
       - GOOGLE_SHEETS_CLIENT_SECRET=${GOOGLE_SHEETS_CLIENT_SECRET}
-      - NOAVIA_TEST_MODE=${NOAVIA_TEST_MODE:-true}
-      - NOAVIA_TEST_SHEET_NAME=${NOAVIA_TEST_SHEET_NAME:-NOAVIA Support Tickets - Test}
     volumes:
       - n8n_data:/home/node/.n8n
     networks:
@@ -103,6 +101,11 @@ services:
       - "6334"
     volumes:
       - qdrant_data:/qdrant/storage
+    environment:
+      # The signing/admin secret stays with the data store. Consumers receive
+      # separately issued, collection-scoped JWTs only (see README).
+      - QDRANT__SERVICE__API_KEY=${QDRANT_SERVICE_API_KEY:?Set QDRANT_SERVICE_API_KEY in the deploy secret store}
+      - QDRANT__SERVICE__JWT_RBAC=true
     networks:
       - saas-internal
     healthcheck:
@@ -127,11 +130,14 @@ services:
       - "8080"
     environment:
       - AI_CLASSIFY_API_KEY=${AI_CLASSIFY_API_KEY}
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - MINIMAX_API_KEY=${MINIMAX_API_KEY}
       - QDRANT_URL=http://qdrant:6333
       # This is a Qdrant JWT scoped to the collections this service needs; it is
       # deliberately not injected into n8n or any other service. It is
       # required only when AI_QDRANT_AUTH_ENABLED=true (the secure default).
-      - AI_QDRANT_AUTH_ENABLED=${AI_QDRANT_AUTH_ENABLED:-false}
+      - AI_QDRANT_AUTH_ENABLED=${AI_QDRANT_AUTH_ENABLED:-true}
+      - AI_QDRANT_API_KEY=${AI_QDRANT_API_KEY:-}
       - AI_EMBEDDING_PROVIDER=${AI_EMBEDDING_PROVIDER:-openai}
       - AI_EMBEDDING_MODEL=${AI_EMBEDDING_MODEL:-text-embedding-3-small}
       - AI_CHAT_PROVIDER=${AI_CHAT_PROVIDER:-minimax}
@@ -164,9 +170,6 @@ services:
       - "8081"
     environment:
       - NOAVIA_TEST_MODE=${NOAVIA_TEST_MODE:-true}
-      - NOAVIA_N8N_INTERNAL_URL=http://n8n:5678/webhook/noavia/tickets/v1
-      - NOAVIA_INTERNAL_WEBHOOK_TOKEN=${NOAVIA_INTERNAL_WEBHOOK_TOKEN}
+      - NOAVIA_N8N_INTERNAL_WEBHOOK_URL=${NOAVIA_N8N_INTERNAL_WEBHOOK_URL:-}
     networks:
       - saas-internal
-    depends_on:
-      - n8n

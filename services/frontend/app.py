@@ -1,85 +1,73 @@
-"""Test-only NOAVIA ticket UI; operational addresses stay server-side."""
+"""NOAVIA's public test-mode ticket form and private submission boundary."""
 from __future__ import annotations
 
+import base64
 import os
 import re
-from email.parser import BytesParser
 from pathlib import Path
+from uuid import uuid4
 
 import httpx
-from fastapi import FastAPI, HTTPException, Request
+from fastapi import FastAPI, HTTPException
 from fastapi.responses import FileResponse
-from pydantic import BaseModel, ValidationError, field_validator
+from pydantic import BaseModel, Field
 
 ROOT = Path(__file__).parent
-app = FastAPI(title="NOAVIA test ticket portal")
+app = FastAPI(title="NOAVIA test portal")
+EMAIL = re.compile(r"^[^@\s]+@[^@\s]+\.[^@\s]+$")
 
 
 class Ticket(BaseModel):
-    name: str
-    email: str
-    subject: str
-    message: str
-
-    @field_validator("email")
-    @classmethod
-    def valid_email(cls, value: str) -> str:
-        if not re.fullmatch(r"[^\s@]+@[^\s@]+\.[^\s@]+", value):
-            raise ValueError("invalid email")
-        return value
+    name: str = Field(min_length=1, max_length=120)
+    email: str = Field(min_length=3, max_length=254)
+    subject: str = Field(min_length=1, max_length=240)
+    message: str = Field(min_length=1, max_length=20_000)
+    attachment_name: str | None = Field(default=None, max_length=255)
+    attachment_type: str | None = None
+    attachment_base64: str | None = None
 
 
-def _test_mode() -> bool:
+def test_mode() -> bool:
     return os.getenv("NOAVIA_TEST_MODE", "true").lower() == "true"
 
 
+async def submit(ticket: Ticket) -> dict:
+    if not EMAIL.match(ticket.email):
+        raise HTTPException(422, "Enter a valid email address.")
+    if ticket.attachment_base64 and ticket.attachment_type not in {"application/pdf", "application/x-pdf"}:
+        raise HTTPException(422, "Attachment must be a PDF.")
+    if ticket.attachment_base64:
+        try:
+            attachment = base64.b64decode(ticket.attachment_base64, validate=True)
+        except ValueError as exc:
+            raise HTTPException(422, "Attachment could not be decoded.") from exc
+        if len(attachment) > 10 * 1024 * 1024:
+            raise HTTPException(422, "Attachment must be 10 MB or smaller.")
+    ticket_id = f"TEST-{uuid4().hex[:10].upper()}"
+    if test_mode():
+        return {"ok": True, "ticket_id": ticket_id, "mode": "test", "message": "Test ticket accepted; nothing was sent."}
+    target = os.getenv("NOAVIA_N8N_INTERNAL_WEBHOOK_URL", "").strip()
+    if not target:
+        raise HTTPException(503, "Submission is disabled until an internal workflow endpoint is configured.")
+    payload = {"ticket_id": ticket_id, "subject": ticket.subject, "body": ticket.message,
+               "requester_email": ticket.email, "requester_name": ticket.name}
+    async with httpx.AsyncClient(timeout=10) as client:
+        response = await client.post(target, json=payload)
+    if response.is_error:
+        raise HTTPException(502, "The private ticket service could not accept the request.")
+    return {"ok": True, "ticket_id": ticket_id, "mode": "controlled-live", "message": "Ticket accepted."}
+
+
 @app.get("/")
-async def index() -> FileResponse:
+def index() -> FileResponse:
     return FileResponse(ROOT / "static" / "index.html")
 
 
 @app.post("/api/tickets")
-async def submit_ticket(request: Request) -> dict:
-    if not _test_mode():
-        raise HTTPException(503, "Ticket portal is available only in test mode.")
-    content_type = request.headers.get("content-type", "")
-    if content_type.startswith("application/json"):
-        body = await request.json(); uploaded = None
-    elif "multipart/form-data" in content_type:
-        boundary = content_type.split("boundary=", 1)[-1].strip('"').encode()
-        raw = await request.body(); body = {}; uploaded = None
-        for part in raw.split(b"--" + boundary):
-            if b"Content-Disposition:" not in part: continue
-            message = BytesParser().parsebytes(part.lstrip(b"\r\n") + b"\r\n")
-            name = message.get_param("name", header="content-disposition")
-            filename = message.get_param("filename", header="content-disposition")
-            value = message.get_payload(decode=True) or b""
-            value = value.rstrip(b"\r\n")
-            if filename: uploaded = (filename, message.get_content_type(), value)
-            elif name: body[name] = value.decode("utf-8", "replace")
-    else:
-        raise HTTPException(415, "Use JSON or multipart form data.")
+async def create_ticket(ticket: Ticket) -> dict:
     try:
-        name, email, subject, message = (str(body.get(key, "")) for key in ("name", "email", "subject", "message"))
-        ticket = Ticket(name=name.strip(), email=email.strip(), subject=subject.strip(), message=message.strip())
-        if not all((ticket.name, ticket.subject, ticket.message)):
-            raise ValueError("Required fields must not be empty.")
-    except (ValidationError, ValueError) as exc:
-        raise HTTPException(422, "Enter a name, valid email, subject, and message.") from exc
-    payload = {"requester_name": ticket.name, "requester_email": str(ticket.email), "subject": ticket.subject, "body": ticket.message}
-    files = None
-    if uploaded:
-        filename, mime, content = uploaded
-        if mime != "application/pdf" or not filename.lower().endswith(".pdf"):
-            raise HTTPException(422, "Optional attachment must be a PDF.")
-        if len(content) > 10 * 1024 * 1024: raise HTTPException(422, "PDF must be 10 MB or smaller.")
-        files = {"data": (filename, content, mime)}
-    url = os.getenv("NOAVIA_N8N_INTERNAL_URL", "http://n8n:5678/webhook/noavia/tickets/v1")
-    headers = {"X-NOAVIA-Internal-Token": os.getenv("NOAVIA_INTERNAL_WEBHOOK_TOKEN", "")}
-    try:
-        async with httpx.AsyncClient(timeout=10) as client:
-            response = await client.post(url, json=None if files else payload, data=payload if files else None, files=files, headers=headers)
-        response.raise_for_status()
-    except httpx.HTTPError as exc:
-        raise HTTPException(502, "Test submission could not reach the private workflow.") from exc
-    return {"ok": True, "message": "Test ticket accepted. No customer email is sent.", "result": response.json()}
+        ticket = ticket.model_copy(update={"name": ticket.name.strip(), "email": ticket.email.strip(),
+                                           "subject": ticket.subject.strip(), "message": ticket.message.strip()})
+    except Exception as exc:
+        raise HTTPException(422, "Name, email, subject, and message are required.") from exc
+    return await submit(ticket)
