@@ -8,17 +8,18 @@ ROOT = Path(__file__).resolve().parents[1]
 WORKFLOW = ROOT / "workflow/noavia/workflow.noavia-ticket-pipeline.v1.json"
 
 
-def run_code_node(js_code, payload, *, binary=None, node_data=None):
+def run_code_node(js_code, payload, *, binary=None, node_data=None, env=None):
     """Execute an n8n Code-node body with only the globals used by this workflow."""
     harness = """
 const code = process.argv[1];
 const payload = JSON.parse(process.argv[2]);
 const binary = JSON.parse(process.argv[3]);
 const nodeData = JSON.parse(process.argv[4]);
+const environment = JSON.parse(process.argv[5]);
 const lookup = (name) => ({ item: { json: nodeData[name] } });
 const quietConsole = { log: () => {} };
-const result = new Function('$json', '$binary', '$', 'console', code)(
-  payload, binary, lookup, quietConsole
+const result = new Function('$json', '$binary', '$', '$env', 'console', code)(
+  payload, binary, lookup, environment, quietConsole
 );
 process.stdout.write(JSON.stringify(result));
 """
@@ -31,6 +32,7 @@ process.stdout.write(JSON.stringify(result));
             json.dumps(payload),
             json.dumps(binary or {}),
             json.dumps(node_data or {}),
+            json.dumps(env or {}),
         ],
         check=True,
         capture_output=True,
@@ -115,8 +117,6 @@ def main() -> None:
                 {"field": "requester_email", "message": "requester_email is required"},
                 {"field": "config.sheet_id", "message": "config.sheet_id is required"},
                 {"field": "config.sheet_name", "message": "config.sheet_name is required"},
-                {"field": "config.default_route_email", "message": "config.default_route_email is required"},
-                {"field": "config.from_email", "message": "config.from_email is required"},
             ],
         },
         "correlation_id": "corr-invalid",
@@ -131,8 +131,6 @@ def main() -> None:
         "config": {
             "sheet_id": "sheet",
             "sheet_name": "Tickets",
-            "default_route_email": "support@example.com",
-            "from_email": "noavia@example.com",
         },
     }
     valid = run_code_node(validator, valid_payload)[0]["json"]
@@ -220,7 +218,7 @@ def main() -> None:
         "processing_status": "routed",
         "processing_error": None,
     }
-    route_input["config"]["routing_emails"] = {"billing": "billing@example.com"}
+    trusted_routing = {"NOAVIA_NOTIFY_ROUTE_ALLOWLIST_JSON": json.dumps({"default": "support@example.com", "billing": "billing@example.com", "manual_review": "support-lead@example.com"}), "NOAVIA_NOTIFY_FROM_EMAIL": "noavia@example.com"}
     attached = run_code_node(nodes["Attach RAG Matches"]["parameters"]["jsCode"], {"data": {"matches": route_input["rag_matches"]}}, node_data={"Prepare RAG Lookup": route_input})[0]["json"]
     drafted = run_code_node(nodes["draft.grounded-reply.v1"]["parameters"]["jsCode"], attached)[0]["json"]
     assert drafted["grounded_draft_reply"]["citations"] == [
@@ -228,7 +226,7 @@ def main() -> None:
         {"id": "", "score": 0.8123, "citation": "kb/billing", "metadata": {"source": "kb/billing"}},
     ]
     assert "[1] kb/duplicate-charge" in drafted["grounded_draft_reply"]["text"]
-    routed = run_code_node(nodes["route.by-classification.v1"]["parameters"]["jsCode"], drafted)[0]["json"]
+    routed = run_code_node(nodes["route.by-classification.v1"]["parameters"]["jsCode"], drafted, env=trusted_routing)[0]["json"]
     low_attached = run_code_node(nodes["Attach RAG Matches"]["parameters"]["jsCode"], {"data": {"matches": [{"score": 0.59, "content": "Unverified guidance", "metadata": {"source": "kb/unverified"}}]}}, node_data={"Prepare RAG Lookup": route_input})[0]["json"]
     assert low_attached["rag_below_threshold"] is True
     low_retrieval = run_code_node(nodes["draft.grounded-reply.v1"]["parameters"]["jsCode"], low_attached)[0]["json"]
@@ -248,14 +246,13 @@ def main() -> None:
     assert "kb/duplicate-charge" in routed["grounded_draft_reply"]["text"]
 
     fallback_route_input = {**route_input, "classification": {"category": "unknown", "confidence": 0.44, "tags": []}}
-    fallback_route_input["config"] = {**route_input["config"], "routing_emails": {}}
     fallback_draft = run_code_node(nodes["draft.grounded-reply.v1"]["parameters"]["jsCode"], {**fallback_route_input, "knowledge_sources": [], "rag_below_threshold": False})[0]["json"]
-    fallback_route = run_code_node(nodes["route.by-classification.v1"]["parameters"]["jsCode"], fallback_draft)[0]["json"]
-    assert fallback_route["route"] == {"queue": "manual_review", "email": "support@example.com"}
+    fallback_route = run_code_node(nodes["route.by-classification.v1"]["parameters"]["jsCode"], fallback_draft, env=trusted_routing)[0]["json"]
+    assert fallback_route["route"] == {"queue": "manual_review", "email": "support-lead@example.com"}
     assert fallback_route["processing_status"] == "needs-manual-review"
     urgent_low_confidence = {**route_input, "classification": {"category": "billing", "confidence": 0.59, "urgency": "critical", "tags": []}}
     urgent_low_confidence = run_code_node(nodes["draft.grounded-reply.v1"]["parameters"]["jsCode"], {**urgent_low_confidence, "knowledge_sources": [], "rag_below_threshold": False})[0]["json"]
-    urgent_low_confidence = run_code_node(nodes["route.by-classification.v1"]["parameters"]["jsCode"], urgent_low_confidence)[0]["json"]
+    urgent_low_confidence = run_code_node(nodes["route.by-classification.v1"]["parameters"]["jsCode"], urgent_low_confidence, env=trusted_routing)[0]["json"]
     assert urgent_low_confidence["processing_status"] == "needs-manual-review" and urgent_low_confidence["route"]["queue"] == "manual_review"
 
     sheets_columns = nodes["notify.google-sheets.v1"]["parameters"]["columns"]["value"]
@@ -270,6 +267,17 @@ def main() -> None:
     assert "No specific policy found — this response is based on general knowledge." in nodes["draft.grounded-reply.v1"]["parameters"]["jsCode"]
     assert nodes["notify.google-sheets.v1"]["onError"] == "continueRegularOutput"
     assert nodes["notify.routing-email.v1"]["onError"] == "continueRegularOutput"
+    email = nodes["notify.routing-email.v1"]["parameters"]
+    assert email["fromEmail"] == "={{ $env.NOAVIA_NOTIFY_FROM_EMAIL }}"
+    assert email["toEmail"] == "={{ $('route.by-classification.v1').item.json.route.email }}"
+    assert not ({"ccEmail", "bccEmail"} & email.keys())
+
+    # Regression: untrusted request fields cannot influence SMTP addressing.
+    hostile_payload = {**valid_payload, "from_email": "attacker-from@example.net", "default_route_email": "attacker-default@example.net", "routing_emails": {"billing": "attacker-route@example.net"}, "config": {**valid_payload["config"], "from_email": "attacker-from@example.net", "default_route_email": "attacker-default@example.net", "routing_emails": {"billing": "attacker-route@example.net"}}}
+    hostile = run_code_node(validator, hostile_payload)[0]["json"]
+    hostile_routed = run_code_node(nodes["route.by-classification.v1"]["parameters"]["jsCode"], {**hostile, "classification": {"category": "billing", "confidence": 0.9, "tags": []}, "rag_matches": [], "processing_status": "routed"}, env=trusted_routing)[0]["json"]
+    assert hostile_routed["route"]["email"] == "billing@example.com"
+    assert "attacker-" not in json.dumps(hostile_routed)
     print(f"PASS: {len(nodes)} nodes; validation envelope, audit telemetry, fallbacks, and delivery contracts present")
 
 

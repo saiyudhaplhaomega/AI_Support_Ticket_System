@@ -36,9 +36,11 @@ the Sheet. Delivery nodes continue into a final outcome check, which returns a
 5. Activate the workflow. The endpoint is `POST /webhook/noavia/tickets/v1`.
 
 The AI token comes from n8n's `AI_CLASSIFY_API_KEY` environment value inside
-the two HTTP nodes. Product-specific Sheet/routing values arrive as trusted
-workflow input, as required by the architecture. Keep the webhook behind
-Header Auth; callers can otherwise choose notification recipients.
+the two HTTP nodes. Sheet values arrive as workflow input. SMTP addressing is server-side only: set
+`NOAVIA_NOTIFY_FROM_EMAIL` and `NOAVIA_NOTIFY_ROUTE_ALLOWLIST_JSON` in n8n
+environment configuration (for example `{ "default": "support@example.com",
+"billing": "billing@example.com" }`). The workflow ignores all request mail
+fields. Keep the webhook behind Header Auth.
 
 ## Input contract
 
@@ -57,13 +59,6 @@ limit is 10 MB (enforce the same body limit at the proxy/runtime in production).
   "config": {
     "sheet_id": "1abc...",
     "sheet_name": "Tickets",
-    "from_email": "support@example.com",
-    "default_route_email": "support@example.com",
-    "routing_emails": {
-      "billing": "billing@example.com",
-      "technical": "engineering@example.com",
-      "manual_review": "support-lead@example.com"
-    },
     "top_k": 5,
     "rag_collection": "kb_documents",
     "rag_filter": { "must": [{ "key": "source", "match": { "value": "kb" } }] }
@@ -72,8 +67,9 @@ limit is 10 MB (enforce the same body limit at the proxy/runtime in production).
 ```
 
 Required: `subject`, one of `body|message|text`, one of
-`requester_email|from|email`, and `sheet_id`, `sheet_name`, `from_email`, and
-`default_route_email` under `config`. Unknown categories use the default route.
+`requester_email|from|email`, and `sheet_id` and `sheet_name` under `config`.
+Unknown categories use the server-configured `default` recipient. Request fields
+`from_email`, `default_route_email`, and `routing_emails` are ignored.
 
 ## Audit telemetry
 
