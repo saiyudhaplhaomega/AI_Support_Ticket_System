@@ -21,7 +21,7 @@ PASS: 26 nodes; validation envelope, audit telemetry, fallbacks, and delivery co
 | Requirement | Offline evidence | Status |
 | --- | --- | --- |
 | Validation and strict handling | `Validate and Normalize` returns the shared validation envelope for empty required fields, non-PDF attachments, and PDFs over 10 MB; workflow IF branches use strict boolean checks. | Verified |
-| Strict service schemas and service contracts | `python3 -m pytest -q` in `services/classification/` ran all 38 offline tests, including schemas, API envelopes, error handling, local RAG, Qdrant credential forwarding, and security checks. | Verified offline |
+| Strict service schemas and service contracts | `python3 -m pytest -q` in `services/classification/` ran 39 offline tests, including schemas, API envelopes, error handling, local RAG, Qdrant credential forwarding, and security checks. | Verified offline |
 | Routing | The harness executes `route.by-classification.v1` for a mapped `billing` category and the default-recipient fallback. It verifies queue, status, and correlation-ID propagation. | Verified |
 | Confidence override | The workflow routes classification confidence below `0.6` to the `manual_review` queue with `needs-manual-review` status, regardless of urgency. The harness exercises confidence `0.44` and `0.59`, including critical urgency. | Verified offline |
 | RAG threshold and fallback | The workflow validates `config.rag_min_score` in `[0, 1]`, defaulting to `0.6`, and filters retrieval matches at that threshold. The harness supplies a `0.59` match and verifies no retained matches/citations plus the exact fallback sentence: `No specific policy found — this response is based on general knowledge.` RAG HTTP-error handling still records `routed_without_rag` unless the item is already marked for manual review. | Verified offline |
@@ -30,15 +30,15 @@ PASS: 26 nodes; validation envelope, audit telemetry, fallbacks, and delivery co
 | PDF fallback | Invalid/mis-sized attachments are rejected before processing. Empty PDF extraction retains the validated ticket text. | Verified for Code-node behavior |
 | Important-step logging | The test verifies required structured fields and JSON process logging for ingestion, validation rejection, classification/RAG fallback, and delivery failure, including correlation IDs. | Verified structurally |
 
-## Release verification
+## Dated offline verification
 
-The current release handoff records the exact published SHA after `git fetch
-origin main` and an equality check between local `HEAD` and `origin/main`.
-This QA record deliberately avoids pinning a stale release SHA. On 2026-08-14,
-the credential-free workflow harness, `./scripts/verify-baseline.sh`, and the
-38-test classification suite all passed. The workflow export uses only
-environment-variable and credential references; no literal credential value is
-recorded in this evidence. This is offline verification, not a live
+On 2026-08-14, the credential-free workflow harness,
+`./scripts/verify-baseline.sh`, and the classification suite were run locally:
+the harness reported a 26-node export and the classification suite reported
+`39 passed`. This record deliberately makes no claim about publication,
+remote-branch equality, or release-handoff state. The workflow export uses
+only environment-variable and credential references; no literal credential
+value is recorded in this evidence. This is offline verification, not a live
 operational test.
 
 ## Explicitly unverified live integrations and deployment behavior
@@ -60,14 +60,15 @@ The following command completed using the already available test environment:
 (cd services/classification && python3 -m pytest -q)
 ```
 
-Result: `38 passed`. No package installation, paid model call, workflow
+Result: `39 passed`. No package installation, paid model call, workflow
 activation, or external delivery was performed.
 
 ## Delivery checklist
 
 - [x] Canonical workflow export and credential-free offline harness are present.
 - [x] Offline structural/Code-node evidence passes for validation, logging, confidence override, RAG threshold/fallback, citations, routing, and delivery contracts.
-- [x] Published-release SHA equality and offline verification recorded in the final handoff.
+- [x] Dated offline verification is recorded above; publication and remote
+  branch state are intentionally outside this evidence record.
 - [ ] Import and activate the workflow in an approved non-production n8n environment.
 - [ ] Validate all live-integration items above with least-privilege test credentials and an approved test ticket.
 - [ ] Set and verify production PII/log retention before release.

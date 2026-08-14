@@ -3,10 +3,10 @@
 Audit date: 2026-08-14. Result: **not accepted**.
 
 Evidence checked: the tracked workflow export, Git history, current GitHub
-`origin/main`, and credential-free repository checks. At audit time,
-`origin/main` was `082ce17ea6006d32c8af7ab55916d7ec4114540c`; local HEAD
-`be31214` was three commits ahead. The export contains 26 nodes. The checks
-passed: workflow/baseline (26 nodes), RAG fixture, classification suite (40
+`origin/main`, and credential-free repository checks. This audit is dated
+2026-08-14 evidence, not a statement of the present remote or release state.
+The export inspected for the audit contains 26 nodes. The recorded checks
+passed: workflow/baseline (26 nodes), RAG fixture, classification suite (39
 tests), and frontend suite (4 tests). No tracked live-secret pattern was found.
 
 ## Required corrections
@@ -24,11 +24,10 @@ tests), and frontend suite (4 tests). No tracked live-secret pattern was found.
    credential reference, so it must not say a Gmail OAuth2 credential is
    selected. A Sheets credential reference is present, but least-privilege
    scope is not repository-verifiable.
-4. Remove or archive stale release assertions. `docs/recovery-manifest.md`
-   reports 23 nodes and a publication-pending state; the offline evidence cites
-   an unspecified release-handoff SHA equality check. Keep dated provenance
-   only, or replace with current, independently verifiable state. Do not call
-   the local-ahead commits published.
+4. Remove or archive stale release assertions. Keep recovery and test
+   provenance dated, and do not call local-ahead commits published. Offline
+   evidence must not imply remote-branch equality or a completed release
+   handoff.
 5. Use status labels consistently: structural/Code-node and local RAG checks
    are **Verified offline**; Sheets/Gmail bindings are **Configured but
    unexecuted** (Gmail only in the isolated environment, not this export); n8n

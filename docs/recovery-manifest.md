@@ -39,9 +39,10 @@ an offline verification wrapper.
 
 ## Verification evidence
 
-- `scripts/verify-baseline.sh` completed successfully on 2026-08-13, confirming
-  the workflow's 23 nodes plus validation, audit telemetry, fallback, and
-  delivery-contract checks.
+- `scripts/verify-baseline.sh` completed successfully on 2026-08-13. That
+  recovery-era result is retained as provenance only; the current tracked
+  workflow export and its current offline harness result are recorded in
+  `docs/noavia-offline-delivery-evidence.md`.
 - A tracked-file scan on 2026-08-13 found no private-key blocks or common live
   credential markers (AWS access keys, Slack tokens, GitHub tokens, or OpenAI
   secret-key patterns).
@@ -49,6 +50,6 @@ an offline verification wrapper.
   policy also excludes runtime data, volumes, caches, Python bytecode, and
   generated test artifacts; none are tracked in this baseline.
 - The recovered artifact commit is `ebd1c93`; the access-runbook commit is
-  `85c52f4`. At the time of recovery, publication was pending a GitHub
-  credential. This historical note is superseded by the current release
-  handoff and does not describe the present remote state.
+  `85c52f4`. Publication was pending a GitHub credential at the time of
+  recovery. This is historical recovery context, not a statement about the
+  current remote or release state.
