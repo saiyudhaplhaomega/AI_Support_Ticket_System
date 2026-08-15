@@ -149,7 +149,9 @@ by evidence an agent could actually produce (parsing an export, running a
 mocked test) rather than a claim that would require trusting an agent with
 a real inbox or a real customer spreadsheet. This is also why Part B of the
 testing guide is something the owner runs, not something an agent claims to
-have already done on the owner's behalf.
+have already done on the owner's behalf. As a consequence, each isolated
+implementation task is independently reviewed before its branch is
+integrated into the main tree.
 
 ## Why there are two separate test tiers instead of one
 
