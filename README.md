@@ -25,6 +25,8 @@ Implements the interface contract in
 | `evals/noavia_rag_eval.py` | Credential-free 40-case local RAG evaluation |
 | `docs/noavia-offline-delivery-evidence.md` | Offline QA evidence, remaining live-verification boundaries, and release checklist |
 | `docs/noavia-final-report.md` | Consolidated SAI-27 final report: remote/workflow/Qdrant evidence, test results, owner-action checklist, credential setup steps, and independent QA & Security review |
+| [`docs/how-to-view-and-test.md`](docs/how-to-view-and-test.md) | **Start here to try it yourself.** Step-by-step: browse the repo, run the offline tests, demo the form, then (owner-only) deploy and send a real ticket end-to-end |
+| [`docs/decisions.md`](docs/decisions.md) | Why n8n/Qdrant/this split/these thresholds were chosen, trade-offs accepted, and open items not yet decided |
 
 ## Quickstart
 

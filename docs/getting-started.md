@@ -1,5 +1,10 @@
 # Getting started
 
+For the full narrated walkthrough (viewing the repo, running every test, and
+the owner-only steps to prove the live deployment works end-to-end), see
+[`how-to-view-and-test.md`](how-to-view-and-test.md). This page is the terse
+version.
+
 ## Safe local portal demo
 
 **Configured but unexecuted:** this starts the checked-in frontend on loopback with test mode explicitly enabled. Test mode returns a synthetic `TEST-...` identifier and does not contact n8n. It requires existing frontend Python dependencies; it neither installs packages nor reads `.env`.
