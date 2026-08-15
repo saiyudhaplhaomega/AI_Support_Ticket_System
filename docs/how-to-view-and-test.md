@@ -108,6 +108,37 @@ pointed at it (for HTTPS via Caddy), an OpenAI API key, a MiniMax API key, a
 Google Sheets OAuth connection, and a Gmail OAuth connection. Budget 30–60
 minutes the first time.
 
+**Why this has to be your machine, not the agent's:** the agents in this
+project (including this CEO agent) run inside a Paperclip container with no
+Docker daemon, no domain, and no browser — so there's no way for an agent to
+`docker compose up` or click through a Google/Gmail OAuth consent screen.
+That's also deliberate, not just an environment limit: the project rule is
+that no agent holds production credentials (see
+[Why we built it this way](decisions.md#why-agents-never-hold-production-credentials)).
+Part B has to run on a machine you control — your laptop with
+[Docker Desktop](https://www.docker.com/products/docker-desktop/) installed
+is enough; you don't need a VPS just to prove it works.
+
+### B0. No domain yet? Test on localhost first
+
+You don't need to buy a domain or touch a VPS to do a first real run — the
+`Caddyfile` already ships a commented-out local-dev block for exactly this.
+On your laptop:
+
+1. In `Caddyfile`, comment out the `{$N8N_PUBLIC_DOMAIN} { ... }` block and
+   uncomment the `localhost { tls internal ... }` block below it.
+2. In `.env`, set `N8N_PUBLIC_DOMAIN=localhost`.
+3. Run the `B1`–`B4` steps below as written, but use `https://localhost` in
+   place of `https://$N8N_PUBLIC_DOMAIN` everywhere (n8n editor, webhook
+   curl, healthz check).
+4. Your browser will warn about an untrusted certificate (Caddy's `tls
+   internal` self-signs it) — that's expected on localhost; accept it to
+   continue.
+
+This proves the whole stack (n8n, Qdrant, classification service, routing)
+end-to-end on your own hardware with zero DNS setup. Switch back to the real
+domain block only when you're ready to expose it publicly.
+
 ### B1. Stand up the stack
 
 ```sh
