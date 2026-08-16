@@ -178,17 +178,65 @@ Full field-by-field detail: [`workflow/noavia/README.md`](../workflow/noavia/REA
 
 ### B3. Load the knowledge base into Qdrant
 
+There are two ways to populate the `noavia_kb_v1` collection. Pick whichever
+fits your environment.
+
+**Important:** `noavia_kb_v1` is the live-validated collection name used by
+this project. It is NOT the default — the classification service's
+`AI_RAG_COLLECTION` setting defaults to `kb_documents` (see
+`services/classification/app/config.py`), so every command below explicitly
+passes `--collection noavia_kb_v1` (CLI) or `"collection": "noavia_kb_v1"`
+(HTTP). If you skip the flag, your KB will land in the wrong (empty)
+collection and the workflow's RAG lookups will return nothing.
+
+**Option (a) — JSONL ingest via the CLI** (best for offline / bulk loads).
+Generate a JSONL file from `knowledge-base/noavia/*.md` and feed it to the
+classification service's bulk ingest CLI:
+
 ```sh
+# Build the JSONL on the fly from the repo's knowledge-base markdown files.
+# Each line: {"id": "<filename>", "content": "<file text>", "metadata": {"source": "knowledge-base/noavia"}}
+{
+  for f in knowledge-base/noavia/*.md; do
+    python3 -c "import json,sys; print(json.dumps({'id': sys.argv[1], 'content': open(sys.argv[2], encoding='utf-8').read(), 'metadata': {'source': 'knowledge-base/noavia'}}))" "$(basename "$f" .md)" "$f"
+  done
+} > /tmp/noavia_kb.jsonl
+
+# Run the bulk ingest CLI inside the running classification-service container.
 docker compose --profile classification-service exec classification-service \
-  python3 -m app.ingest knowledge-base/noavia/
+  python3 -m app.ingest_cli --file /tmp/noavia_kb.jsonl --collection noavia_kb_v1
 ```
 
-(Exact command name may differ — check
-`services/classification/README.md` "Ingestion" section for the current
-entrypoint.) Confirm the collection populated:
+(The CLI reads the same env vars as the service — `OPENAI_API_KEY`,
+`QDRANT_URL`, etc. Make sure your `.env` is loaded into the container.)
+
+**Option (b) — POST `/internal/ingest/v1` directly** (best for small/ad-hoc
+loads over the internal Docker network; no extra container exec needed).
 
 ```sh
-curl -s -H "Authorization: Bearer $AI_QDRANT_API_KEY" \
+curl -sS -X POST http://classification-service:8000/internal/ingest/v1 \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer $AI_INGEST_API_KEY" \
+  -d '{
+    "collection": "noavia_kb_v1",
+    "records": [
+      { "id": "duplicate-charge", "content": "...", "metadata": { "source": "knowledge-base/noavia" } }
+    ]
+  }'
+```
+
+(`classification-service:8000` is the container-DNS endpoint on the internal
+Docker network; `AI_INGEST_API_KEY` is the bearer token from `.env`. To load
+all 8 files, send one record per file in the `records` array — the endpoint
+caps at 500 records per call. For a single-file example, copy the body text
+of `knowledge-base/noavia/duplicate-charge.md` into the `content` field
+above; for a full load, build the array from each file with a short shell
+loop or pre-stage a JSONL and feed it via option (a).)
+
+**Verify the collection populated:**
+
+```sh
+curl -s -H "Authorization: Bearer $AI_QD..._KEY" \
   http://localhost:6333/collections/noavia_kb_v1 | python3 -m json.tool
 ```
 
