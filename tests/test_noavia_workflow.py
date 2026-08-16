@@ -41,6 +41,158 @@ process.stdout.write(JSON.stringify(result));
     return json.loads(completed.stdout)
 
 
+def test_m1_hostile_rag_collection(nodes, validator, valid_payload) -> None:
+    """M1 (a)+(c): a hostile config.rag_collection MUST be rejected.
+
+    The plan requires the default allow-list to be ['noavia_kb_v1']. The
+    classification service's AI_RAG_COLLECTION default is 'kb_documents'
+    (services/classification/app/config.py:131). A payload that names
+    'kb_documents' (or any collection not in the allow-list) must surface
+    as VALIDATION_ERROR so the workflow cannot exfiltrate vectors from
+    another collection.
+    """
+    for hostile_value in ("kb_documents", "internal_secrets", ""):
+        payload = {**valid_payload, "config": {"rag_collection": hostile_value}}
+        result = run_code_node(validator, payload)[0]["json"]
+        assert result["ok"] is False, f"hostile rag_collection={hostile_value!r} should be rejected"
+        assert result["error"]["code"] == "VALIDATION_ERROR"
+        details_by_field = {d["field"]: d for d in result["error"]["details"]}
+        assert "config.rag_collection" in details_by_field, (
+            f"missing config.rag_collection error for value={hostile_value!r}; got fields: {list(details_by_field)}"
+        )
+        assert "not in allowlist" in details_by_field["config.rag_collection"]["message"]
+
+    # Sanity: a payload with the allow-listed rag_collection MUST be accepted.
+    accepted = run_code_node(validator, {**valid_payload, "config": {"rag_collection": "noavia_kb_v1"}})[0]["json"]
+    assert accepted["ok"] is True
+    assert accepted["config"]["rag_collection"] == "noavia_kb_v1"
+
+    # Sanity: a payload with NO config MUST be accepted and use defaults.
+    bare = run_code_node(validator, valid_payload)[0]["json"]
+    assert bare["ok"] is True
+    assert bare["config"]["sheet_name"] == "NOAVIA Support Tickets - Test"
+    assert bare["config"]["top_k"] == 3
+    assert bare["config"]["rag_min_score"] == 0.6
+
+
+def test_m1_top_k_and_rag_filter(nodes, validator, valid_payload) -> None:
+    """M1 (a): top_k clamps to 1..10; rag_filter shape is enforced.
+
+    top_k outside the [1, 10] range MUST fall back to the default 3.
+    A malformed rag_filter (string, array, or non-Qdrant shape) MUST be
+    rejected with VALIDATION_ERROR. A well-formed rag_filter MUST be
+    preserved as caller-supplied.
+    """
+    # top_k above the cap clamps to default 3.
+    high = run_code_node(validator, {**valid_payload, "config": {"top_k": 15}})[0]["json"]
+    assert high["ok"] is True and high["config"]["top_k"] == 3
+    # top_k below the floor clamps to default 3.
+    low = run_code_node(validator, {**valid_payload, "config": {"top_k": 0}})[0]["json"]
+    assert low["ok"] is True and low["config"]["top_k"] == 3
+    # top_k in range is preserved.
+    kept = run_code_node(validator, {**valid_payload, "config": {"top_k": 7}})[0]["json"]
+    assert kept["ok"] is True and kept["config"]["top_k"] == 7
+    # top_k that is not a finite number clamps to default 3.
+    nan = run_code_node(validator, {**valid_payload, "config": {"top_k": "NaN"}})[0]["json"]
+    assert nan["ok"] is True and nan["config"]["top_k"] == 3
+
+    # Malformed rag_filter shapes are rejected.
+    for bad_filter in ("just-a-string", ["array", "shape"], {"unknown_key": "x"}, {"must": "not-an-array"}):
+        bad = run_code_node(validator, {**valid_payload, "config": {"rag_filter": bad_filter}})[0]["json"]
+        assert bad["ok"] is False, f"malformed rag_filter={bad_filter!r} should be rejected"
+        fields = {d["field"] for d in bad["error"]["details"]}
+        assert "config.rag_filter" in fields
+
+    # A well-formed rag_filter is preserved.
+    good_filter = {"must": [{"key": "source", "match": {"value": "kb"}}]}
+    accepted = run_code_node(validator, {**valid_payload, "config": {"rag_filter": good_filter}})[0]["json"]
+    assert accepted["ok"] is True
+    assert accepted["config"]["rag_filter"] == good_filter
+
+    # Undefined rag_filter is the no-op path.
+    no_filter = run_code_node(validator, {**valid_payload, "config": {"top_k": 5}})[0]["json"]
+    assert no_filter["ok"] is True
+    assert "rag_filter" not in no_filter["config"]
+
+
+def test_m2_fallback_distinction(nodes, valid_payload, trusted_routing) -> None:
+    """M2 (a): Classification Fallback and RAG Fallback produce DISTINCT Sheet
+    row values for status, error_code, and error_message.
+
+    Per FINAL PLAN v6 §2.2 M2: the Sheet row already carries the
+    distinction; if any surface was missing, a minimal mapping was added.
+    The mapping differentiates error_code by inspecting processing_error.message
+    so upstream-provided codes pass through unchanged.
+    """
+    # Build the post-Validate base the fallback nodes consume.
+    ingested = {
+        **valid_payload,
+        "ticket": {
+            "id": valid_payload["ticket_id"],
+            "requester_name": "Test Customer",
+            "subject": valid_payload["subject"],
+            "body": valid_payload["body"],
+            "text": f"{valid_payload['subject']}\n\n{valid_payload['body']}",
+            "requester_email": valid_payload["requester_email"],
+            "locale": "en",
+            "received_at": "2026-08-16T00:00:00.000Z",
+            "attachment_name": None,
+        },
+        "context": {},
+        "config": {"sheet_name": "NOAVIA Support Tickets - Test", "top_k": 3, "rag_min_score": 0.6},
+        "correlation_id": "corr-fallback",
+        "audit_logs": [],
+    }
+    classification_fallback_js = nodes["Classification Fallback"]["parameters"]["jsCode"]
+    rag_fallback_js = nodes["RAG Fallback"]["parameters"]["jsCode"]
+    route_js = nodes["route.by-classification.v1"]["parameters"]["jsCode"]
+
+    # --- Classification Fallback: feeds $json.error (from upstream node). ---
+    cf_input = {**ingested, "error": {"code": "UPSTREAM_ERROR", "message": "Classification failed"}}
+    cf_after = run_code_node(
+        classification_fallback_js, cf_input,
+        node_data={"audit.ingestion.v1": ingested},
+    )[0]["json"]
+    assert cf_after["processing_status"] == "needs-manual-review"
+    cf_routed = run_code_node(route_js, {**cf_after, "grounded_draft_reply": {"text": "fallback reply"}}, env=trusted_routing)[0]["json"]
+    cf_row = cf_routed["sheet_row"]
+
+    # --- RAG Fallback: feeds $json.error (from upstream node). ---
+    # Prepare RAG Lookup is the node right before ai.rag-lookup.v1; its output
+    # already carries classification (which succeeded; only RAG failed). The
+    # fallback uses that as `base` and overrides rag_matches/etc.
+    prepare_rag_lookup_output = {**ingested, "classification": {"category": "billing", "confidence": 0.87, "tags": ["duplicate_charge"]}, "processing_status": "routed"}
+    rf_input = {
+        **ingested,
+        "classification": {"category": "billing", "confidence": 0.87, "tags": ["duplicate_charge"]},
+        "processing_status": "routed",
+        "error": {"code": "UPSTREAM_ERROR", "message": "RAG lookup failed"},
+    }
+    rf_after = run_code_node(
+        rag_fallback_js, rf_input,
+        node_data={"Prepare RAG Lookup": prepare_rag_lookup_output},
+    )[0]["json"]
+    assert rf_after["processing_status"] == "routed_without_rag"
+    assert rf_after["classification"]["category"] == "billing"
+    rf_routed = run_code_node(route_js, {**rf_after, "grounded_draft_reply": {"text": "fallback reply"}}, env=trusted_routing)[0]["json"]
+    rf_row = rf_routed["sheet_row"]
+
+    # The Sheet row must distinguish the two paths on all three surfaces.
+    assert cf_row["status"] != rf_row["status"], (
+        f"status must differ; cf={cf_row['status']!r}, rf={rf_row['status']!r}"
+    )
+    assert cf_row["status"] == "needs-manual-review"
+    assert rf_row["status"] == "routed_without_rag"
+    assert cf_row["error_code"] != rf_row["error_code"], (
+        f"error_code must differ; cf={cf_row['error_code']!r}, rf={rf_row['error_code']!r}"
+    )
+    assert cf_row["error_message"] != rf_row["error_message"], (
+        f"error_message must differ; cf={cf_row['error_message']!r}, rf={rf_row['error_message']!r}"
+    )
+    assert "Classification" in cf_row["error_message"]
+    assert "RAG" in rf_row["error_message"]
+
+
 def main() -> None:
     data = json.loads(WORKFLOW.read_text())
     assert data["name"] == "workflow.noavia-ticket-pipeline.v1" and data["active"] is False
@@ -255,6 +407,13 @@ def main() -> None:
     hostile = run_code_node(validator, hostile_payload)[0]["json"]
     hostile_routed = run_code_node(nodes["route.by-classification.v1"]["parameters"]["jsCode"], {**hostile, "classification": {"category": "billing", "confidence": 0.9, "tags": []}, "rag_matches": [], "processing_status": "routed"}, env=trusted_routing)[0]["json"]
     assert hostile_routed["route"]["email"] == "billing@example.com"
+
+    # ---- M1 hostile-input: hostile rag_collection MUST be REJECTED. ----
+    test_m1_hostile_rag_collection(nodes, validator, valid_payload)
+    # ---- M1 hardening: top_k clamps to 1..10; rag_filter shape is enforced. ----
+    test_m1_top_k_and_rag_filter(nodes, validator, valid_payload)
+    # ---- M2 fallback distinction: Sheet row distinguishes both paths. ----
+    test_m2_fallback_distinction(nodes, valid_payload, trusted_routing)
     print(f"PASS: {len(nodes)} nodes; validation envelope, audit telemetry, fallbacks, and delivery contracts present")
 
 
