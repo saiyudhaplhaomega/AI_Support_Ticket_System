@@ -196,3 +196,50 @@ Not yet decided, or decided as a placeholder pending real usage data:
   (`docs/capability-module-architecture.md`) is designed to make this
   possible, but hasn't actually been exercised by a second consumer yet —
   worth treating the first reuse attempt as a test of the contract itself.
+
+## Known debt (designed + ticketed, per FINAL PLAN v6 §2.5)
+
+These items are intentionally NOT closed in the 2026-08-16 readiness round.
+Each is sized, designed at a paragraph level, and tracked as a separate
+ticket so a future round can pick it up with full context. None of them
+are hidden risk; all of them are listed because a sharp interviewer would
+ask "why isn't this here?" and these are the honest answers.
+
+- **T1 (NOAVIA-S1): split the shared bearer into two symmetric tokens.**
+  Today the classification service holds one bearer; the same secret
+  authenticates both `/ai/classify-ticket|/ai/rag-lookup|/ai/grounded-draft`
+  (read) and `/internal/ingest/v1` (write). Splitting it into
+  `AI_CLASSIFY_API_KEY` (read) and `AI_INGEST_API_KEY` (write) is the
+  minimum a production-bound deployment needs; until then, a leaked
+  read-key can also write. Half a day. Owner-approval gate.
+- **T2 (NOAVIA-S2): mitigate prompt injection in email summary.** The
+  surface is `services/classification/app/services/draft_service.py`, NOT
+  the workflow's `draft.grounded-reply.v1` (the latter is a pure Code
+  node with no model call). Three options, in order of fidelity:
+  (a) structured-output-only chat call where the email body is composed
+  from structured fields plus citation metadata and customer text never
+  appears verbatim; (b) pre-summarize customer text via a separate
+  non-prompt-injection call and feed only the summary into the draft
+  prompt; (c) truncate the ticket body to a 200-char prefix in the draft
+  prompt and template the email body from classification + RAG hits
+  (lowest fidelity). C1's executionRetention is defense-in-depth only;
+  T2 is the authoritative PII / prompt-injection fix.
+- **T3 (NOAVIA-S3): webhook idempotency.** No persistent store is
+  available in n8n today, so a duplicate webhook delivery will produce
+  duplicate audit logs (and possibly duplicate Sheet rows if the
+  delivery path retries). Two options: (a) add a small Redis container
+  to docker-compose as the dedup store (durable, adds infra);
+  (b) accept + document the duplicate-audit-logs limitation honestly
+  and defer until V2. DEFAULT: option (b). Owner may pick (a) at
+  planning time.
+- **T4 (Hermes-side, out of scope for this repo): secret-handling
+  hardening for diagnostics.** Not a credential rotation. Sub-actions:
+  (a) prevent Hermes temporary/session snapshots from persisting
+  secret-bearing environment values; (b) future diagnostics must never
+  print API-key prefixes, suffixes, full values, or any key-derived
+  material — implementers can start obeying this rule today without
+  any Hermes-side change; (c) inspection tooling should redact
+  secret-bearing environment values by design. Implementation owner is
+  a Hermes maintenance profile, not the NOAVIA workflow-engineer.
+  `N8N_API_KEY` is NOT being rotated or replaced in this readiness round
+  per owner instruction.
