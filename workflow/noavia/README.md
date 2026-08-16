@@ -56,6 +56,30 @@ value comes only from this allow-list. It has no configurable `from` value, and
 ticket request fields cannot set either sender or recipient. Keep the webhook
 behind Header Auth.
 
+### Credentials and where they live
+
+Live n8n credential bindings belong in the live n8n instance, NOT in the
+repo artifact. The repo artifact (workflow JSON) carries credential ID
+references; environment-specific bindings (Gmail OAuth, Header Auth
+intake credential) are owner-bound in the isolated n8n instance only.
+The choice per credential is documented here so a future operator can
+see at a glance what is shared and what is environment-specific.
+
+| Credential             | Node                          | Repo state              | Live state            | Why bucket            |
+|------------------------|-------------------------------|-------------------------|-----------------------|-----------------------|
+| Ingest Header Auth     | Ingest Support Ticket         | placeholder by design   | owner-bound, secret   | environment-specific  |
+|                        |                               | `REPLACE_WITH_...`      | value not in repo     | secret, not shared    |
+| Gmail OAuth2           | `notify.routing-email.v1`     | empty by design         | owner-bound live      | environment-specific  |
+|                        |                               | (`{id:"",name:""}`)     | in isolated n8n       | OAuth identity, scoped|
+| Google Sheets OAuth2   | `notify.google-sheets.v1` +   | real ID reference       | same ID, same scope   | non-secret reference, |
+|                        | `initialize.google-sheets-    | (no secret value)       |                       | same in both          |
+|                        | header.v1` (disabled)         |                         |                       |                       |
+
+Rule: environment-specific secrets (Header Auth, Gmail OAuth) are
+owner-bound only; non-secret references (Sheets) live in both. Do not
+move secrets into the repo under any circumstances; do not move
+non-secret references out of the repo (they are deployment-shared).
+
 ## Input contract
 
 JSON and multipart requests use the same fields. For multipart, put the
@@ -80,10 +104,12 @@ limit is 10 MB (enforce the same body limit at the proxy/runtime in production).
 }
 ```
 
-Required: `subject`, one of `body|message|text`, one of
-`requester_email|from|email`, and `sheet_id` and `sheet_name` under `config`.
-Unknown categories use the server-configured `default` recipient. Legacy request
-fields named `from_email`, `default_route_email`, and `routing_emails` are not
+Required: `subject`, one of `body|message|text`, and one of
+`requester_email|from|email`. `requester_name` (or legacy `name`) is
+optional: if absent, it is auto-derived from the email local-part
+(`alice@example.com` → `alice`). Unknown categories use the server-
+configured `default` recipient. Legacy request fields named
+`from_email`, `default_route_email`, and `routing_emails` are not
 used to derive Gmail sender or recipient addresses.
 
 ## Audit telemetry
