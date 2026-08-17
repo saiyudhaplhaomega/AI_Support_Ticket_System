@@ -38,6 +38,29 @@ NOAVIA_SESSION_SECRET=<a new random 32-byte-or-longer secret>
 NOAVIA_GOOGLE_REDIRECT_URI=https://<your-vercel-domain>/api/auth/google/callback
 ```
 
+For the public assistant, private administrator assistant, and document
+library, also add these **Production** variables. The URLs are not secrets;
+the matching Header Auth values are secrets and must be copied from the
+corresponding n8n Header Auth credential, never from a browser or Git file.
+
+```text
+NOAVIA_N8N_PUBLIC_CHAT_WEBHOOK_URL=https://n8n.saiyudh.com/webhook/noavia/public-chat/v1
+NOAVIA_N8N_PUBLIC_CHAT_HEADER_NAME=<public chat Header Auth header name>
+NOAVIA_N8N_PUBLIC_CHAT_HEADER_VALUE=<public chat Header Auth secret>
+NOAVIA_N8N_ADMIN_CHAT_WEBHOOK_URL=https://n8n.saiyudh.com/webhook/noavia/admin-chat/v1
+NOAVIA_N8N_ADMIN_CHAT_HEADER_NAME=<admin chat Header Auth header name>
+NOAVIA_N8N_ADMIN_CHAT_HEADER_VALUE=<admin chat Header Auth secret>
+NOAVIA_N8N_DOCUMENT_MANAGER_WEBHOOK_URL=https://n8n.saiyudh.com/webhook/noavia/documents/v1
+NOAVIA_N8N_SOURCE_LIBRARY_WEBHOOK_URL=https://n8n.saiyudh.com/webhook/noavia/source-library/v1
+```
+
+The document-manager and source-library webhooks use
+`NOAVIA_N8N_WEBHOOK_HEADER_NAME` and `NOAVIA_N8N_WEBHOOK_HEADER_VALUE` shown
+in the first block. Save the variables, then redeploy the Vercel production
+deployment. Success means `/chat` accepts a question and `/admin/assistant`
+answers only after Google sign-in; the knowledge library stays empty until the
+source-store bootstrap has run and documents have been indexed.
+
 `NOAVIA_KB_ADMIN_USERNAME` and `NOAVIA_KB_ADMIN_PASSWORD` are no longer needed
 for browser access. Keep `NOAVIA_KB_ADMIN_TOKEN` only if an approved server-side
 programmatic client still uses that compatibility path.

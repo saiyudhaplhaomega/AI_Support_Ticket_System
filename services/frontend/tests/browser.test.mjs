@@ -3,10 +3,13 @@ import { readFile } from 'node:fs/promises';
 import test from 'node:test';
 
 const root = new URL('../static/', import.meta.url);
-const [support, login, knowledgeBase, supportJs, adminJs, styles] = await Promise.all([
+const [support, login, knowledgeBase, supportJs, adminJs, styles, customStyles, chat, chatJs, adminAssistant, adminAssistantJs] = await Promise.all([
   readFile(new URL('index.html', root), 'utf8'), readFile(new URL('admin-login.html', root), 'utf8'),
   readFile(new URL('knowledge-base.html', root), 'utf8'), readFile(new URL('support.js', root), 'utf8'),
   readFile(new URL('admin.js', root), 'utf8'), readFile(new URL('styles.css', root), 'utf8'),
+  readFile(new URL('custom.css', root), 'utf8'), readFile(new URL('chat.html', root), 'utf8'),
+  readFile(new URL('chat.js', root), 'utf8'), readFile(new URL('admin-assistant.html', root), 'utf8'),
+  readFile(new URL('admin-assistant.js', root), 'utf8'),
 ]);
 
 test('public support and administrator controls are separate pages', () => {
@@ -19,5 +22,22 @@ test('public support and administrator controls are separate pages', () => {
 test('client UI preserves readable attachment and administrator feedback', () => {
   assert.match(supportJs, /Attachment must be a PDF/); assert.match(supportJs, /10 MB or smaller/);
   assert.match(adminJs, /api\/knowledge-base\/session/); assert.match(adminJs, /Indexing document/);
-  assert.match(styles, /--accent:#b8ff48/); assert.match(styles, /@media/);
+  assert.match(styles, /--acid:#d8ff54/); assert.match(styles, /@media/);
+});
+
+test('public chat has an accessible dock, side launcher, and Enter-to-send behavior', () => {
+  assert.match(support, /class="chat-fab" href="\/chat"/);
+  assert.match(chat, /id="chat-thread" aria-live="polite"/);
+  assert.match(chat, /id="chat-message"/); assert.match(chat, /Press Enter to send/);
+  assert.match(chatJs, /event\.key==='Enter'&&!event\.shiftKey/);
+  assert.match(chatJs, /event\.preventDefault\(\);send\(\)/);
+  assert.match(customStyles, /\.chat-fab/); assert.match(customStyles, /\.chat-dock/);
+});
+
+test('administrator assistant is a separate private chat surface with keyboard send', () => {
+  assert.match(adminAssistant, /id="admin-chat-thread" aria-live="polite"/);
+  assert.match(adminAssistant, /id="admin-chat-message"/);
+  assert.match(adminAssistant, /Private guidance only/);
+  assert.match(adminAssistantJs, /\/api\/admin\/assistant/);
+  assert.match(adminAssistantJs, /event\.key==='Enter'&&!event\.shiftKey/);
 });
