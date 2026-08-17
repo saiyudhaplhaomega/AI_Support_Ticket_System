@@ -1,0 +1,13 @@
+.signal-card {
+  display: flex;
+  gap: 12px;
+  max-width: 51ch;
+  margin-top: 30px;
+  padding: 15px 0;
+  border-top: 1px solid var(--line);
+  border-bottom: 1px solid var(--line);
+}
+
+.signal-card p { margin: 0; color: var(--muted); font-size: 13px; line-height: 1.55; }
+.signal-card strong { display: block; color: var(--ink); font-size: 11px; letter-spacing: .08em; text-transform: uppercase; }
+.signal-dot { flex: 0 0 auto; width: 11px; height: 11px; margin-top: 4px; background: var(--acid); border: 1px solid var(--ink); border-radius: 50%; box-shadow: 0 0 0 4px rgba(216, 255, 84, .3); }

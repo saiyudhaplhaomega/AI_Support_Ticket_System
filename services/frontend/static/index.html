@@ -1,12 +1,24 @@
 <!doctype html>
-<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>NOAVIA Support (Safe local demo)</title><style>body{font:16px system-ui;max-width:52rem;margin:3rem auto;padding:1rem;line-height:1.45}label{display:block;margin:1rem 0 .3rem}input,textarea{box-sizing:border-box;width:100%;padding:.6rem}button{margin-top:1rem;padding:.7rem 1rem}.notice{padding:.8rem;background:#eef6ff;border-left:4px solid #2671c9}#result{margin-top:1rem;font-weight:600}.error{color:#a40000}#demo-result{margin-top:1.5rem}pre{white-space:pre-wrap;overflow-wrap:anywhere;background:#f6f8fa;padding:1rem;border-radius:.25rem}dt{font-weight:700}dd{margin:0 0 1rem}</style></head><body>
-<h1>NOAVIA Support</h1><p class="notice"><strong>Safe local demo.</strong> The submitted details are validated locally and discarded. Demo mode never contacts Gmail, Google Sheets, n8n, model providers, or Qdrant.</p>
-<form id="ticket"><label>Name<input name="name" required maxlength="120"></label><label>Email<input name="email" type="email" required></label><label>Subject<input name="subject" required maxlength="240"></label><label>Message<textarea name="message" required maxlength="20000"></textarea></label><label>Optional PDF<input name="attachment" type="file" accept="application/pdf,application/x-pdf"></label><button>Submit demo ticket</button></form><p id="result" role="status" aria-live="polite"></p>
-<section id="demo-result" hidden aria-labelledby="demo-title"><h2 id="demo-title">Deterministic demo processing result</h2><p>The reply below is an internal draft only. It has not been sent.</p><dl id="demo-fields"></dl></section>
-<script>
-const form=document.querySelector('#ticket'),result=document.querySelector('#result'),demoResult=document.querySelector('#demo-result'),fields=document.querySelector('#demo-fields'),pdfTypes=new Set(['application/pdf','application/x-pdf']);
-const labels={classification:'Mock classification JSON',rag:'Top-3 RAG sources and fallback decision',routing:'Routing decision',manual_review:'Manual-review status',processing_log:'Processing log',internal_draft_reply:'Internal-draft-only reply'};
-function showError(message){result.className='error';result.textContent=message;demoResult.hidden=true}
-function renderDemo(demo){fields.replaceChildren();for(const[key,label]of Object.entries(labels)){const term=document.createElement('dt');term.textContent=label;const description=document.createElement('dd'),output=document.createElement('pre');output.textContent=JSON.stringify(demo[key],null,2);description.append(output);fields.append(term,description)}demoResult.hidden=false}
-form.onsubmit=async event=>{event.preventDefault();const attachment=form.attachment.files[0];if(attachment&&!pdfTypes.has(attachment.type))return showError('Attachment must be a PDF.');if(attachment&&attachment.size>10*1024*1024)return showError('Attachment must be 10 MB or smaller.');const payload=Object.fromEntries(new FormData(form));if(attachment){payload.attachment_name=attachment.name;payload.attachment_type=attachment.type;payload.attachment_base64=await new Promise(resolve=>{const reader=new FileReader();reader.onload=()=>resolve(reader.result.split(',')[1]);reader.readAsDataURL(attachment)})}result.className='';result.textContent='Submitting demo ticket…';demoResult.hidden=true;try{const response=await fetch('/api/tickets',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify(payload)}),data=await response.json();if(!response.ok||!data.ok)return showError(data.detail||data.message||'Unable to submit the demo ticket.');result.textContent=`${data.message} Ticket: ${data.ticket_id}.`;renderDemo(data.demo);form.reset()}catch(_){showError('Unable to reach the local demo server. Please try again.')}};
-</script></body></html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>NOAVIA Support Desk</title><link rel="stylesheet" href="/static/styles.css"><link rel="stylesheet" href="/static/custom.css">
+</head>
+<body>
+  <header class="site-header"><a class="brand" href="/">NOAVIA<span>Support Desk</span></a><nav><a class="active" href="/">Submit a ticket</a><a href="/chat">Ask NOAVIA</a><a href="/admin/login">Administrator</a></nav></header>
+  <main class="shell support-layout">
+    <section class="intro"><p class="eyebrow">Customer support</p><h1>Make the next step clear.</h1><p>Send the context once. NOAVIA routes it, checks the relevant guidance, and prepares an internal draft for the support team. A person remains in control of every customer reply.</p><div class="signal-card"><span class="signal-dot"></span><p><strong>Operational note</strong> Your request is recorded for the support team; it is never answered automatically on your behalf.</p></div><dl class="trust-list"><div><dt>01</dt><dd>Clear routing</dd></div><div><dt>02</dt><dd>Source-aware drafts</dd></div><div><dt>03</dt><dd>Human review when needed</dd></div></dl></section>
+    <section class="form-panel" aria-labelledby="ticket-title"><p class="eyebrow">New request</p><h2 id="ticket-title">Support ticket</h2><p class="subtle" id="notice">Checking service status…</p>
+      <form id="ticket" novalidate>
+        <div class="form-grid"><label>Name<input name="name" required maxlength="120" autocomplete="name"><small>Your contact name.</small></label><label>Email<input name="email" type="email" required maxlength="254" autocomplete="email"><small>Where the support team can reach you.</small></label></div>
+        <label>Subject<input name="subject" required maxlength="240"><small>One concise description of the issue.</small></label>
+        <label>Message<textarea name="message" required maxlength="20000" rows="7"></textarea><small>Include the relevant order, account, or error details.</small></label>
+        <label class="file-field">Optional PDF<input name="attachment" type="file" accept="application/pdf,application/x-pdf"><span>Invoice or supporting document, up to 10 MB</span></label>
+        <button class="primary" type="submit">Send request</button><p id="result" class="form-result" role="status" aria-live="polite"></p>
+      </form>
+    </section>
+  </main>
+  <section class="shell result-section" id="demo-result" hidden aria-labelledby="result-title"><p class="eyebrow">Processing result</p><h2 id="result-title">Internal processing summary</h2><p class="subtle" id="demo-note"></p><dl id="demo-fields" class="result-grid"></dl></section>
+  <footer>NOAVIA Support Desk <span>Operational clarity, not more administration.</span></footer>
+  <script src="/static/support.js"></script>
+</body></html>

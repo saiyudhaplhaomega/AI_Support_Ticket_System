@@ -1,0 +1,78 @@
+# Canonical NOAVIA Part 1 interview stack.
+# Run from the repository root: docker compose up -d
+
+services:
+  n8n:
+    image: docker.n8n.io/n8nio/n8n:2.34.5
+    restart: unless-stopped
+    ports:
+      - "5678:5678"
+    environment:
+      N8N_HOST: localhost
+      N8N_PORT: 5678
+      N8N_PROTOCOL: http
+      WEBHOOK_URL: http://localhost:5678/
+      GENERIC_TIMEZONE: UTC
+      # Required because the exported Code nodes read only non-secret routing
+      # configuration from their n8n runtime environment.
+      N8N_BLOCK_ENV_ACCESS_IN_NODE: "false"
+    volumes:
+      - n8n_data:/home/node/.n8n
+      - ./knowledge-base/noavia:/files/noavia:ro
+    networks: [noavia]
+    depends_on:
+      qdrant:
+        condition: service_healthy
+
+  qdrant:
+    image: qdrant/qdrant:v1.19.0
+    restart: unless-stopped
+    ports:
+      - "6333:6333"
+      - "6334:6334"
+    volumes:
+      - qdrant_data:/qdrant/storage
+    networks: [noavia]
+    healthcheck:
+      test: ["CMD-SHELL", "bash -c '</dev/tcp/127.0.0.1/6333'"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  frontend:
+    build: ./services/frontend
+    restart: unless-stopped
+    ports:
+      - "8081:8081"
+    environment:
+      NOAVIA_TEST_MODE: ${NOAVIA_TEST_MODE:-true}
+      NOAVIA_N8N_INTERNAL_WEBHOOK_URL: ${NOAVIA_N8N_INTERNAL_WEBHOOK_URL:-}
+      NOAVIA_N8N_INTERNAL_ALLOWED_ORIGIN: http://n8n:5678
+      NOAVIA_N8N_PUBLIC_WEBHOOK_URL: ${NOAVIA_N8N_PUBLIC_WEBHOOK_URL:-}
+      NOAVIA_N8N_KB_UPDATE_WEBHOOK_URL: ${NOAVIA_N8N_KB_UPDATE_WEBHOOK_URL:-}
+      NOAVIA_N8N_DOCUMENT_MANAGER_WEBHOOK_URL: ${NOAVIA_N8N_DOCUMENT_MANAGER_WEBHOOK_URL:-}
+      NOAVIA_N8N_SOURCE_LIBRARY_WEBHOOK_URL: ${NOAVIA_N8N_SOURCE_LIBRARY_WEBHOOK_URL:-}
+      NOAVIA_N8N_PUBLIC_CHAT_WEBHOOK_URL: ${NOAVIA_N8N_PUBLIC_CHAT_WEBHOOK_URL:-}
+      NOAVIA_N8N_PUBLIC_CHAT_HEADER_NAME: ${NOAVIA_N8N_PUBLIC_CHAT_HEADER_NAME:-}
+      NOAVIA_N8N_PUBLIC_CHAT_HEADER_VALUE: ${NOAVIA_N8N_PUBLIC_CHAT_HEADER_VALUE:-}
+      NOAVIA_N8N_KB_LIBRARY_WEBHOOK_URL: ${NOAVIA_N8N_KB_LIBRARY_WEBHOOK_URL:-}
+      NOAVIA_N8N_ADMIN_CHAT_WEBHOOK_URL: ${NOAVIA_N8N_ADMIN_CHAT_WEBHOOK_URL:-}
+      NOAVIA_N8N_ADMIN_CHAT_HEADER_NAME: ${NOAVIA_N8N_ADMIN_CHAT_HEADER_NAME:-}
+      NOAVIA_N8N_ADMIN_CHAT_HEADER_VALUE: ${NOAVIA_N8N_ADMIN_CHAT_HEADER_VALUE:-}
+      NOAVIA_N8N_WEBHOOK_HEADER_NAME: ${NOAVIA_N8N_WEBHOOK_HEADER_NAME:-}
+      NOAVIA_N8N_WEBHOOK_HEADER_VALUE: ${NOAVIA_N8N_WEBHOOK_HEADER_VALUE:-}
+      NOAVIA_KB_ADMIN_TOKEN: ${NOAVIA_KB_ADMIN_TOKEN:-}
+      NOAVIA_KB_ADMIN_USERNAME: ${NOAVIA_KB_ADMIN_USERNAME:-}
+      NOAVIA_KB_ADMIN_PASSWORD: ${NOAVIA_KB_ADMIN_PASSWORD:-}
+    networks: [noavia]
+    depends_on:
+      n8n:
+        condition: service_started
+
+volumes:
+  n8n_data:
+  qdrant_data:
+
+networks:
+  noavia:
+    driver: bridge

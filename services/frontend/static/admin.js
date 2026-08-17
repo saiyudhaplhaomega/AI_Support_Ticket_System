@@ -1,0 +1,34 @@
+const login = document.querySelector('#kb-login');
+const upload = document.querySelector('#kb');
+const logout = document.querySelector('#logout');
+
+function setMessage(element, message, isError = false) { element.className = isError ? 'form-result error' : 'form-result'; element.textContent = message; }
+function readFile(file) { return new Promise((resolve, reject) => { const reader = new FileReader(); reader.onerror = () => reject(new Error('The file could not be read.')); reader.onload = () => resolve(String(reader.result).split(',')[1]); reader.readAsDataURL(file); }); }
+function base64FromText(value) { const bytes = new TextEncoder().encode(value); let binary = ''; bytes.forEach((byte) => { binary += String.fromCharCode(byte); }); return btoa(binary); }
+async function session() { const response = await fetch('/api/knowledge-base/session'); if (!response.ok) throw new Error('Unable to verify administrator access.'); return response.json(); }
+
+if (login) {
+  session().then((state) => { if (state.authenticated) window.location.assign('/admin/knowledge-base'); }).catch(() => {});
+  login.addEventListener('submit', async (event) => { event.preventDefault(); const result = document.querySelector('#login-result'); setMessage(result, 'Signing in…'); try { const response = await fetch('/api/knowledge-base/login', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(Object.fromEntries(new FormData(login))) }); const data = await response.json(); if (!response.ok || !data.ok) throw new Error(data.detail || 'Sign-in failed.'); window.location.assign('/admin/knowledge-base'); } catch (error) { setMessage(result, error.message, true); } });
+}
+
+if (upload) {
+  const result = document.querySelector('#kb-result'), modeLabel = document.querySelector('#kb-mode'), dot = document.querySelector('#status-dot');
+  const collection = document.querySelector('#kb-collection'), list = document.querySelector('#kb-list'), documents = document.querySelector('#kb-documents'), libraryResult = document.querySelector('#kb-library-result');
+  const editorPanel = document.querySelector('#kb-editor-panel'), editorTitle = document.querySelector('#kb-editor-title'), editor = document.querySelector('#kb-editor'), save = document.querySelector('#kb-save'), cancel = document.querySelector('#kb-cancel'), editorResult = document.querySelector('#kb-editor-result');
+  let editingSource = '';
+  session().then((state) => { if (!state.authenticated) return window.location.replace('/admin/login'); modeLabel.textContent = state.mode === 'live' ? 'Live workflow configured' : state.mode === 'test' ? 'Safe demonstration mode' : 'Workflow configuration required'; if (state.mode !== 'disabled') dot.classList.add('ready'); }).catch(() => window.location.replace('/admin/login'));
+  async function library(action, source = '') { const response = await fetch('/api/knowledge-base/library', { method: 'POST', headers: {'content-type': 'application/json'}, body: JSON.stringify({ collection: collection.value, action, source }) }); const data = await response.json(); if (!response.ok || !data.ok) throw new Error(data.detail || 'Document library request failed.'); return data; }
+  async function saveDocument(name, contentBase64) { const response = await fetch('/api/knowledge-base', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ name, collection: collection.value, content_base64: contentBase64 }) }); const data = await response.json(); if (!response.ok || !data.ok) throw new Error(data.detail || data.message || 'Knowledge-base update failed.'); return data; }
+  async function refreshDocuments() {
+    setMessage(libraryResult, 'Loading documents…');
+    try { const data = await library('list'); const items = data.data?.documents || []; documents.replaceChildren(...items.map((document) => { const item = document.createElement('li'); const name = typeof document === 'string' ? document : document.source; item.textContent = name; const edit = document.createElement('button'); edit.type = 'button'; edit.className = 'secondary'; edit.textContent = 'View or edit'; edit.addEventListener('click', async () => { try { const data = await library('read', name); editingSource = name; editorTitle.textContent = `Edit ${name}`; editor.value = data.data?.content || ''; editorPanel.hidden = false; editor.focus(); setMessage(editorResult, 'Edit the source text, then save to replace the indexed version.'); } catch (error) { setMessage(libraryResult, error.message, true); } }); const remove = document.createElement('button'); remove.type = 'button'; remove.className = 'secondary'; remove.textContent = 'Delete'; remove.addEventListener('click', async () => { if (!window.confirm(`Delete ${name}? This removes the saved source and its vectors.`)) return; try { await library('delete', name); editorPanel.hidden = true; await refreshDocuments(); } catch (error) { setMessage(libraryResult, error.message, true); } }); item.append(' ', edit, ' ', remove); return item; })); setMessage(libraryResult, items.length ? `${items.length} document(s) loaded.` : 'No documents found.'); }
+    catch (error) { setMessage(libraryResult, error.message, true); }
+  }
+  upload.addEventListener('submit', async (event) => { event.preventDefault(); const file = upload.file.files[0]; if (!file) return; if (!/\.(md|markdown|txt)$/i.test(file.name) || file.size > 5 * 1024 * 1024) return setMessage(result, 'Choose a Markdown or text file no larger than 5 MB.', true); setMessage(result, 'Saving and indexing document…'); try { const data = await saveDocument(file.name, await readFile(file)); setMessage(result, data.message || 'Document saved and indexed.'); upload.reset(); await refreshDocuments(); } catch (error) { setMessage(result, error.message, true); } });
+  save.addEventListener('click', async () => { const content = editor.value; if (!editingSource || !content.trim()) return setMessage(editorResult, 'Source text cannot be empty.', true); setMessage(editorResult, 'Saving and indexing document…'); try { const data = await saveDocument(editingSource, base64FromText(content)); setMessage(editorResult, data.message || 'Document saved and indexed.'); await refreshDocuments(); } catch (error) { setMessage(editorResult, error.message, true); } });
+  cancel.addEventListener('click', () => { editorPanel.hidden = true; editingSource = ''; });
+  list.addEventListener('click', refreshDocuments);
+  collection.addEventListener('change', () => { editorPanel.hidden = true; editingSource = ''; documents.replaceChildren(); setMessage(libraryResult, 'Choose Refresh documents to inspect this knowledge area.'); });
+}
+if (logout) logout.addEventListener('click', async () => { await fetch('/api/knowledge-base/logout', { method: 'POST' }); window.location.assign('/admin/login'); });

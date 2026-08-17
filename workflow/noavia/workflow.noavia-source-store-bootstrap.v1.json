@@ -1,0 +1,11 @@
+{
+  "name": "workflow.noavia-source-store-bootstrap.v1",
+  "active": false,
+  "nodes": [
+    {"id":"source-store-001","name":"Manual Trigger","type":"n8n-nodes-base.manualTrigger","typeVersion":1,"position":[-240,0],"parameters":{}},
+    {"id":"source-store-002","name":"Create NOAVIA Source Documents Table","type":"n8n-nodes-base.dataTable","typeVersion":1.1,"position":[0,0],"parameters":{"resource":"table","operation":"create","tableName":"noavia_source_documents_v2","columns":{"column":[{"name":"document_key","type":"string"},{"name":"collection_alias","type":"string"},{"name":"collection_name","type":"string"},{"name":"source","type":"string"},{"name":"content","type":"string"},{"name":"version","type":"string"},{"name":"index_status","type":"string"},{"name":"updated_at","type":"string"}]},"options":{"createIfNotExists":true}}},
+    {"id":"source-store-003","name":"Bootstrap Result","type":"n8n-nodes-base.code","typeVersion":2,"position":[240,0],"parameters":{"jsCode":"return[{json:{ok:true,message:'NOAVIA source document table is ready.',table:$json.name??'noavia_source_documents_v2'}}];"}}
+  ],
+  "connections":{"Manual Trigger":{"main":[[{"node":"Create NOAVIA Source Documents Table","type":"main","index":0}]]},"Create NOAVIA Source Documents Table":{"main":[[{"node":"Bootstrap Result","type":"main","index":0}]]}},
+  "settings":{"executionOrder":"v1","saveManualExecutions":true}
+}
