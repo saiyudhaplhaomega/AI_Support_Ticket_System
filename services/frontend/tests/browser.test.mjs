@@ -35,6 +35,7 @@ test('public chat expands from an accessible side launcher and sends with Enter'
   assert.match(chatJs, /event\.preventDefault\(\);send\(\)/);
   assert.match(chatJs, /function setOpen\(open\)/); assert.match(chatJs, /else toggle\.focus\(\)/);
   assert.match(chatJs, /closeButton\.addEventListener/); assert.match(chatJs, /event\.key==='Escape'/);
+  assert.match(chatJs, /^\(\(\)=>\{/);
   assert.match(customStyles, /\.chat-fab/); assert.match(customStyles, /\.chat-widget/);
 });
 
