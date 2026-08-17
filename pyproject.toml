@@ -1,2 +1,16 @@
+[project]
+name = "noavia-ticket"
+version = "1.0.0"
+requires-python = ">=3.11"
+dependencies = [
+  "fastapi==0.141.1",
+  "uvicorn[standard]==0.52.2",
+  "httpx==0.28.1",
+  "python-multipart==0.0.20",
+  "pydantic[email]==2.13.4",
+  "Authlib==1.6.9",
+  "itsdangerous==2.2.0",
+]
+
 [tool.vercel]
 entrypoint = "services.frontend.app:app"
