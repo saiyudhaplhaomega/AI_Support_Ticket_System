@@ -5,7 +5,7 @@
   <title>NOAVIA Support Desk</title><link rel="stylesheet" href="/static/styles.css"><link rel="stylesheet" href="/static/custom.css">
 </head>
 <body>
-  <header class="site-header"><a class="brand" href="/">NOAVIA<span>Support Desk</span></a><nav><a class="active" href="/">Submit a ticket</a><a href="/chat">Ask NOAVIA</a><a href="/admin/login">Administrator</a></nav></header>
+  <header class="site-header"><a class="brand" href="/">NOAVIA<span>Support Desk</span></a><nav><a class="active" href="/">Submit a ticket</a><a href="/admin/login">Administrator</a></nav></header>
   <main class="shell support-layout">
     <section class="intro"><p class="eyebrow">Customer support</p><h1>Make the next step clear.</h1><p>Send the context once. NOAVIA routes it, checks the relevant guidance, and prepares an internal draft for the support team. A person remains in control of every customer reply.</p><div class="signal-card"><span class="signal-dot"></span><p><strong>Operational note</strong> Your request is recorded for the support team; it is never answered automatically on your behalf.</p></div><dl class="trust-list"><div><dt>01</dt><dd>Clear routing</dd></div><div><dt>02</dt><dd>Source-aware drafts</dd></div><div><dt>03</dt><dd>Human review when needed</dd></div></dl></section>
     <section class="form-panel" aria-labelledby="ticket-title"><p class="eyebrow">New request</p><h2 id="ticket-title">Support ticket</h2><p class="subtle" id="notice">Checking service status…</p>
@@ -19,7 +19,10 @@
     </section>
   </main>
   <section class="shell result-section" id="demo-result" hidden aria-labelledby="result-title"><p class="eyebrow">Processing result</p><h2 id="result-title">Internal processing summary</h2><p class="subtle" id="demo-note"></p><dl id="demo-fields" class="result-grid"></dl></section>
-  <a class="chat-fab" href="/chat" aria-label="Open the NOAVIA assistant"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 5.75A2.75 2.75 0 0 1 7.75 3h8.5A2.75 2.75 0 0 1 19 5.75v5.5A2.75 2.75 0 0 1 16.25 14H11l-4.25 4v-4.16A2.75 2.75 0 0 1 5 11.25z"/><path d="M8.5 8.5h7M8.5 10.75h4.25"/></svg><span>Ask NOAVIA</span></a>
+  <aside class="chat-widget" id="chat-widget" aria-label="NOAVIA public assistant" hidden>
+    <section class="chat-dock"><header class="chat-dock-header"><span class="chat-status" aria-hidden="true"></span><div><strong>NOAVIA assistant</strong><small>Public information only</small></div><button class="chat-close" id="chat-close" type="button" aria-label="Close assistant">×</button></header><div class="chat-thread" id="chat-thread" aria-live="polite"><article class="message message-assistant"><p>What would you like to know about NOAVIA?</p></article></div><form id="chat" class="chat-composer"><label class="sr-only" for="chat-message">Your question</label><textarea id="chat-message" name="message" required maxlength="2000" rows="2" placeholder="Write a question…"></textarea><button class="chat-send" type="submit" aria-label="Send question">Send</button></form><p class="chat-hint">Press Enter to send. Use Shift + Enter for a new line.</p><p class="form-result" id="chat-result" role="status" aria-live="polite"></p></section>
+  </aside>
+  <button class="chat-fab" id="chat-toggle" type="button" aria-controls="chat-widget" aria-expanded="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 5.75A2.75 2.75 0 0 1 7.75 3h8.5A2.75 2.75 0 0 1 19 5.75v5.5A2.75 2.75 0 0 1 16.25 14H11l-4.25 4v-4.16A2.75 2.75 0 0 1 5 11.25z"/><path d="M8.5 8.5h7M8.5 10.75h4.25"/></svg><span>Ask NOAVIA</span></button>
   <footer>NOAVIA Support Desk <span>Operational clarity, not more administration.</span></footer>
-  <script src="/static/support.js"></script>
+  <script src="/static/support.js"></script><script src="/static/chat.js"></script>
 </body></html>

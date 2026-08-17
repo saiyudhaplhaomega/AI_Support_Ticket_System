@@ -25,13 +25,17 @@ test('client UI preserves readable attachment and administrator feedback', () =>
   assert.match(styles, /--acid:#d8ff54/); assert.match(styles, /@media/);
 });
 
-test('public chat has an accessible dock, side launcher, and Enter-to-send behavior', () => {
-  assert.match(support, /class="chat-fab" href="\/chat"/);
-  assert.match(chat, /id="chat-thread" aria-live="polite"/);
-  assert.match(chat, /id="chat-message"/); assert.match(chat, /Press Enter to send/);
+test('public chat expands from an accessible side launcher and sends with Enter', () => {
+  assert.match(support, /id="chat-widget"[^>]*hidden/);
+  assert.match(support, /id="chat-toggle"[^>]*aria-controls="chat-widget"/);
+  assert.match(support, /id="chat-close"/);
+  assert.match(support, /id="chat-thread" aria-live="polite"/);
+  assert.match(support, /id="chat-message"/); assert.match(support, /Press Enter to send/);
   assert.match(chatJs, /event\.key==='Enter'&&!event\.shiftKey/);
   assert.match(chatJs, /event\.preventDefault\(\);send\(\)/);
-  assert.match(customStyles, /\.chat-fab/); assert.match(customStyles, /\.chat-dock/);
+  assert.match(chatJs, /function setOpen\(open\)/); assert.match(chatJs, /else toggle\.focus\(\)/);
+  assert.match(chatJs, /closeButton\.addEventListener/); assert.match(chatJs, /event\.key==='Escape'/);
+  assert.match(customStyles, /\.chat-fab/); assert.match(customStyles, /\.chat-widget/);
 });
 
 test('administrator assistant is a separate private chat surface with keyboard send', () => {
