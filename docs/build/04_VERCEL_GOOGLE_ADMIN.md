@@ -1,5 +1,7 @@
 # Vercel deployment and Google administrator login
 
+> Deployment note: after connecting this repository to Vercel, push a new commit to `main` (or redeploy from the Vercel dashboard) so Vercel creates its first Git-backed production deployment.
+
 Run every command from
 `C:/Users/saiyu/Desktop/projects/Noavia/AI_Support_Ticket_System/services/frontend`.
 
