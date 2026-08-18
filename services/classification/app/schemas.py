@@ -1,7 +1,7 @@
 """Request/response models for ai.classify-ticket.v1 and ai.rag-lookup.v1.
 
 These mirror the JSON Schemas published in
-capability-module-architecture.md §3.1/§3.2 exactly for the required fields.
+(retired module architecture spec) exactly for the required fields.
 Additional *optional* fields below (e.g. `collection` on rag-lookup) are
 additive per the versioning rule in §4 ("additive optional fields do not
 require a bump") and documented in README.md.
@@ -41,7 +41,7 @@ class ClassifyTicketInput(BaseModel):
 
 class ClassifyTicketOutputData(BaseModel):
     # `category`, `confidence`, and `tags` are the original published v1
-    # fields (capability-module-architecture.md §3.1) and stay required so
+    # fields (retired module architecture spec) and stay required so
     # existing consumers never see a shape change. `urgency`, `sentiment`,
     # and `summary` are additive optional fields per the §4 versioning rule
     # ("additive optional fields do not require a bump") — the MiniMax

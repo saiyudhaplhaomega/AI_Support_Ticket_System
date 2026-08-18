@@ -1,7 +1,7 @@
 """Env-var contract for this service.
 
 Implements the "fail fast on missing secrets" rule from
-infra.secrets-and-network.v1 (capability-module-architecture.md §3.3): a
+infra.secrets-and-network.v1 (retired module architecture spec): a
 module must refuse to start with a clear structured error if a required env
 var is missing, never fall back to a hardcoded default for a secret.
 

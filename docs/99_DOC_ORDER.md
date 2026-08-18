@@ -12,6 +12,6 @@
 
 Historical/recovered platform notes remain in this repository for traceability,
 but they are not the Part 1 implementation guide. In particular,
-`README.legacy-platform.md`, `noavia-part1-readme.md`,
+The retired platform and Part 1 documents
 `how-to-view-and-test.md`, and the `learning/` folder may describe the retired
 classification-service architecture.

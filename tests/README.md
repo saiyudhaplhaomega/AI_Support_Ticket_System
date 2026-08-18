@@ -5,7 +5,6 @@ Contract tests for the workflow exports.
 | File | Status |
 |---|---|
 | `test_noavia_workflow.py` | Current. Asserts the structural contracts of the n8n exports. |
-| `test_noavia_workflow.legacy.py` | Historical. Targets the retired classification microservice under `services/classification/`. Kept as a record; not part of the current build. |
 
 ```bash
 python tests/test_noavia_workflow.py

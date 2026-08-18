@@ -9,7 +9,7 @@ This is the reference consumer for the reusable SaaS-factory capability
 modules. The repository contains an importable n8n export and an internal
 classification service contract. Import/activation and execution in n8n have
 not been verified in this repository; see
-[`docs/noavia-offline-delivery-evidence.md`](../../docs/noavia-offline-delivery-evidence.md)
+the offline delivery evidence (retired)
 before treating the steps below as a release procedure.
 
 ## Processing path

@@ -61,6 +61,6 @@ a controlled test. Live validation intentionally requires owner approval
 because it can write the supplied Google Sheet, consume OpenAI credits, and
 send internal mail.
 
-The older `README.legacy-platform.md`, `noavia-part1-readme.md`, and
+The older retired-platform and superseded Part 1 documents, and the
 `learning/` material is kept as historical context for the previous
 classification-service experiment; do not use it to configure this submission.

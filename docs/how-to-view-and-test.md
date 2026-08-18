@@ -56,7 +56,7 @@ python3 tests/test_noavia_workflow.py          # parses the 26-node workflow exp
 
 Expected: every command ends in `PASS` / `passed`, zero failures. As of the
 last recorded run (2026-08-14) this is **45/45 tests passing** - see
-[`docs/noavia-offline-delivery-evidence.md`](noavia-offline-delivery-evidence.md)
+the offline delivery evidence (retired)
 for the full dated record with exact output.
 
 If any command fails, that's a real regression - stop and open an issue
@@ -309,16 +309,16 @@ in the `n8n_data` volume, so nothing is lost.
   still on the credential-free deterministic embedder instead of real OpenAI
   embeddings, wider separation is expected once you set
   `OPENAI_API_KEY` (see §7 of
-  [`docs/noavia-final-report.md`](noavia-final-report.md)).
+  the final report (retired)).
 
 ## Current status snapshot (last verified 2026-08-14)
 
 - Part A: **done**, 45/45 offline tests passing, evidence in
-  [`docs/noavia-offline-delivery-evidence.md`](noavia-offline-delivery-evidence.md).
+  the offline delivery evidence (retired).
 - Part B: **not yet run** by any agent - no agent in this project holds
   production credentials or deployment approval, by design (see
   [Decisions](decisions.md)). The four remaining owner actions are listed in
-  §6 of [`docs/noavia-final-report.md`](noavia-final-report.md). Once you
+  §6 of the final report (retired). Once you
   complete B1–B4 yourself, this line should be updated with the date and
   outcome - that's the Documentation Agent's job, not a claim to make in
   advance of the evidence.

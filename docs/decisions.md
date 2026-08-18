@@ -7,7 +7,7 @@
 A decision log for the project owner: what was chosen, what the alternative
 was, and why. Pair this with
 [`docs/how-to-view-and-test.md`](how-to-view-and-test.md) (how to prove it
-works) and [`docs/capability-module-architecture.md`](capability-module-architecture.md)
+works) and the module architecture notes (since retired with the classification service)
 (the formal interface contract). Where a decision changed after a review
 caught a problem, that's noted - this project's git history has several
 real corrections, not just first drafts.
@@ -181,7 +181,7 @@ Not yet decided, or decided as a placeholder pending real usage data:
   values, not tuned against real ticket volume - revisit once real tickets
   flow through and manual-review rate can be measured.
 - **PII/log retention** is explicitly called out as unset in the delivery
-  checklist (`docs/noavia-offline-delivery-evidence.md`) - needs an owner
+  checklist (retired with the classification service) - needs an owner
   decision on how long ticket text, AI summaries, and processing logs are
   kept before this goes anywhere near real customer data.
 - **Monitoring/alerting** on the live stack (container health, failed
@@ -197,7 +197,7 @@ Not yet decided, or decided as a placeholder pending real usage data:
   behind that name, nothing in this stack detects a quality regression
   except rerunning `evals/noavia_rag_eval.py` by hand.
 - **Reuse for a second product**: the capability-module contract
-  (`docs/capability-module-architecture.md`) is designed to make this
+  (retired with the classification service) was designed to make this
   possible, but hasn't actually been exercised by a second consumer yet -
   worth treating the first reuse attempt as a test of the contract itself.
 

@@ -1,6 +1,6 @@
 """Inbound auth for this HTTP service.
 
-Per capability-module-architecture.md §3.1/§3.2, consumers never call
+Per (retired module architecture spec), consumers never call
 Qdrant/OpenAI directly — they call this module's endpoints. Since this is an
 HTTP service (not an in-process n8n sub-workflow), it needs its own inbound
 auth: callers present `AI_CLASSIFY_API_KEY` as a bearer token. This is the

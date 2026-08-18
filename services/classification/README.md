@@ -2,7 +2,7 @@
 
 Owner: RAG & AI Integration Engineer. Standalone HTTP service implementing
 the two `ai.*` interfaces defined in
-[`capability-module-architecture.md`](../../../capability-module-architecture.md)
+the module architecture spec (retired alongside this service)
 §3.1/§3.2. Product-agnostic - NOAVIA is the first consumer, not the only one.
 Consumers (n8n or otherwise) only need this document; nothing below the
 "Endpoints" section is required reading to integrate.
@@ -73,7 +73,7 @@ Success response (`200`):
 ```
 
 `category`, `confidence`, and `tags` are the original published v1 fields
-(`capability-module-architecture.md` §3.1) and are always required -
+(module architecture spec §3.1, retired) and are always required -
 consumers built against the original contract keep working unchanged.
 `urgency`, `sentiment`, and `summary` are additive optional fields (§4 -
 "additive optional fields do not require a bump") added when chat moved to

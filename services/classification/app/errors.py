@@ -1,4 +1,4 @@
-"""Shared error envelope — capability-module-architecture.md §5.
+"""Shared error envelope — (retired module architecture spec)
 
 Every module in the company (regardless of family) uses this exact envelope
 shape so a consumer only ever needs to branch on `ok`, never on
