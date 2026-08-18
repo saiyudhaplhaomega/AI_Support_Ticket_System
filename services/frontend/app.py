@@ -35,7 +35,7 @@ app.add_middleware(
 )
 EMAIL = re.compile(r"^[^@\s]+@[^@\s]+\.[^@\s]+$")
 KB_RATE_WINDOW_SECONDS = 600
-KB_RATE_MAX_REQUESTS = 5
+KB_RATE_MAX_REQUESTS = 20
 CHAT_RATE_MAX_REQUESTS = 12
 CHAT_RATE_WINDOW_SECONDS = 600
 _kb_attempts: dict[str, deque[float]] = defaultdict(deque)
@@ -190,8 +190,8 @@ def admin_chat_target() -> str | None:
     return os.getenv("NOAVIA_N8N_ADMIN_CHAT_WEBHOOK_URL", "").strip() or None
 
 
-def require_kb_admin(request: Request, token: str | None) -> None:
-    """Fail closed for live KB writes and rate-limit each caller."""
+def require_kb_admin(request: Request, token: str | None, *, rate_limit: bool = True) -> None:
+    """Fail closed for administration; rate-limit document mutations per caller."""
     if test_mode():
         return
     expected = os.getenv("NOAVIA_KB_ADMIN_TOKEN", "")
@@ -202,6 +202,8 @@ def require_kb_admin(request: Request, token: str | None) -> None:
     token_valid = bool(expected and token and secrets.compare_digest(token, expected))
     if not session_valid and not token_valid:
         raise HTTPException(401, "Knowledge-base administrator authentication is required.")
+    if not rate_limit:
+        return
     client = request.client.host if request.client else "unknown"
     now = time.monotonic()
     recent = _kb_attempts[client]
@@ -518,7 +520,7 @@ async def public_chat(question: PublicChatQuestion, request: Request) -> dict:
 
 @app.post("/api/admin/assistant")
 async def admin_assistant(question: PublicChatQuestion, request: Request, x_noavia_kb_admin_token: str | None = Header(default=None)) -> dict:
-    require_kb_admin(request, x_noavia_kb_admin_token)
+    require_kb_admin(request, x_noavia_kb_admin_token, rate_limit=False)
     message = question.message.strip()
     if not message:
         raise HTTPException(422, "Enter a question.")
@@ -563,7 +565,7 @@ async def knowledge_library(
     x_noavia_kb_admin_token: str | None = Header(default=None),
 ) -> dict:
     """Admin-only document lifecycle proxy; n8n owns persistent source storage."""
-    require_kb_admin(request, x_noavia_kb_admin_token)
+    require_kb_admin(request, x_noavia_kb_admin_token, rate_limit=action.action == "delete")
     source = (action.source or "").strip()
     if action.action != "list" and (not source or source != Path(source).name):
         raise HTTPException(422, "A safe document filename is required.")

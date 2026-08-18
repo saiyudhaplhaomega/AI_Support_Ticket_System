@@ -26,6 +26,7 @@ test('client UI preserves readable attachment and administrator feedback', () =>
   assert.match(adminJs, /api\/knowledge-base\/session/); assert.match(adminJs, /Indexing document/);
   assert.match(adminJs, /uploadCollection\.value/); assert.match(adminJs, /collection\.value = targetCollection/);
   assert.match(adminJs, /saveDocument\(editingSource,base64FromText\(content\),collection\.value\)/);
+  assert.match(adminJs, /items\.map\(\(entry\)/); assert.doesNotMatch(adminJs, /items\.map\(\(document\)/);
   assert.match(styles, /--acid:#d8ff54/); assert.match(styles, /@media/);
 });
 
