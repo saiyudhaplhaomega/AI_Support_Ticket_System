@@ -1,8 +1,8 @@
-# NOAVIA - AI-Powered Support Ticket Processing System
+# Design rationale
 
-n8n + Qdrant + OpenAI. Start with `docker compose up -d`, import the two workflow
-exports, bind credentials, run the ingestion workflow once, then POST a ticket to
-`/webhook/noavia/tickets/v1`.
+The four questions every reviewer asks: what was decided, how AI output is validated,
+how RAG is set up, and what would come next. The [root README](../README.md) carries a
+condensed version of this under "Design notes". This page is the longer form.
 
 ## Key architecture decisions
 
