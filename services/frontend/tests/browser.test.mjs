@@ -17,11 +17,15 @@ test('public support and administrator controls are separate pages', () => {
   assert.match(login, /Administrator sign in/); assert.match(login, /Continue with Google/);
   assert.match(login, /\/api\/auth\/google\/login/); assert.match(knowledgeBase, /Knowledge update/);
   assert.match(knowledgeBase, /Sign out/);
+  assert.match(knowledgeBase, /id="kb-upload-collection"/);
+  assert.match(knowledgeBase, /Public company chatbot/); assert.match(knowledgeBase, /id="admin-chat-thread"/);
 });
 
 test('client UI preserves readable attachment and administrator feedback', () => {
   assert.match(supportJs, /Attachment must be a PDF/); assert.match(supportJs, /10 MB or smaller/);
   assert.match(adminJs, /api\/knowledge-base\/session/); assert.match(adminJs, /Indexing document/);
+  assert.match(adminJs, /uploadCollection\.value/); assert.match(adminJs, /collection\.value = targetCollection/);
+  assert.match(adminJs, /saveDocument\(editingSource,base64FromText\(content\),collection\.value\)/);
   assert.match(styles, /--acid:#d8ff54/); assert.match(styles, /@media/);
 });
 
@@ -45,4 +49,5 @@ test('administrator assistant is a separate private chat surface with keyboard s
   assert.match(adminAssistant, /Private guidance only/);
   assert.match(adminAssistantJs, /\/api\/admin\/assistant/);
   assert.match(adminAssistantJs, /event\.key==='Enter'&&!event\.shiftKey/);
+  assert.match(adminAssistantJs, /^\(\(\)=>\{/);
 });
