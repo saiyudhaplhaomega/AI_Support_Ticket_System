@@ -106,7 +106,8 @@ def main() -> None:
     assert "noavia_kb_v1" in manager_validation and "noavia_public_chat_kb_v1" in manager_validation and "noavia_admin_kb_v1" in manager_validation
     assert node(document_manager, "Receive Document Mutation")["parameters"]["path"] == "noavia/documents/v1"
     assert node(document_manager, "Embeddings OpenAI - text-embedding-3-small")["parameters"]["options"]["dimensions"] == 1536
-    assert "must_not" in node(document_manager, "Delete Older Vector Versions")["parameters"]["body"]
+    version_cleanup = node(document_manager, "Delete Older Vector Versions")["parameters"]["jsCode"]
+    assert "must_not" in version_cleanup and "httpRequest" in version_cleanup
     assert "A valid Markdown or text document" in manager_validation
     assert document_manager["connections"]["Qdrant Vector Store - Insert New Version"]["main"][0][0]["node"] == "Save Canonical Source"
     assert document_manager["connections"]["Save Canonical Source"]["main"][0][0]["node"] == "Delete Older Vector Versions"
