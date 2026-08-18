@@ -1,4 +1,4 @@
-# NOAVIA Part 1 — current implementation
+# NOAVIA Part 1 - current implementation
 
 This is the current interview-delivery architecture. Run commands from
 `C:/Users/saiyu/Desktop/projects/Noavia/AI_Support_Ticket_System`.
@@ -16,7 +16,7 @@ Two native n8n workflows implement Part 1:
    Markdown knowledge base, splits it into 800-character chunks with 120
    overlap, embeds with `text-embedding-3-small` (1536 dimensions), and adds
    documents to the `noavia_kb_v1` Qdrant collection.
-2. `workflow/noavia/workflow.noavia-ticket-pipeline.v1.json` validates the
+2. `workflow/noavia/workflow.noavia-ticket-pipeline.v2.1.json` validates the
    webhook ticket (including required name), optionally extracts PDF text,
    classifies it through OpenAI with strict JSON validation, retrieves three
    matching chunks through the native Qdrant node, and asks OpenAI for a

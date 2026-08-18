@@ -30,3 +30,31 @@ volumes/
 *.db
 *.sqlite
 *.sqlite3
+
+# Agent/session working directories. These capture raw n8n execution logs,
+# which embed live request headers including Authorization bearer tokens.
+# A leaked OpenAI key was found in .hermes/n8n-work/ during a security review.
+.hermes/
+.worktrees/
+
+# Local Python environment at the repository root.
+.venv/
+
+# Generated fixtures and scratch output, not part of the submission.
+output/
+tmp/
+
+# Interview preparation material. Working notes, not a deliverable.
+interview-prep/
+
+# NOAVIA-supplied hiring material. Never publish: the task document and the
+# sample ERP export are the company's property, and the CSV carries
+# personal-data-shaped contact records.
+todo/
+archive/
+*.lnk
+
+# Local dev scratch, superseded by scripts/verify_part1_workflows.py.
+scripts/diag-workflow.json
+scripts/mock_classify_server.py
+scripts/test-pdfs/

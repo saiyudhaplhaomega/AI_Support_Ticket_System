@@ -13,9 +13,9 @@ Send this only after importing and activating the ticket workflow:
 
 ```powershell
 curl.exe -X POST "https://n8n.saiyudh.com/webhook/noavia/tickets/v1" `
-  -H "Content-Type: application/json" `
-  -H "<your Header Auth header>: <your test secret>" `
-  -d '{"name":"NOAVIA Test","email":"noavia-test@example.invalid","subject":"Charged twice","message":"I was charged twice for the same subscription."}'
+ -H "Content-Type: application/json" `
+ -H "<your Header Auth header>: <your test secret>" `
+ -d '{"name":"NOAVIA Test","email":"noavia-test@example.invalid","subject":"Charged twice","message":"I was charged twice for the same subscription."}'
 ```
 
 Expected result: HTTP 200, one test Sheet row, a `billing` classification,
@@ -32,7 +32,7 @@ or email. This proves validation fails before external work.
 
 Use a valid request whose message is unrelated to the knowledge base, for
 example `Please explain quantum entanglement.`. Expected result: the stored
-draft contains exactly `No specific policy found — this response is based on
+draft contains exactly `No specific policy found - this response is based on
 general knowledge.` and has no policy sources.
 
 ## 4. PDF path

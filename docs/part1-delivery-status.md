@@ -1,7 +1,7 @@
 # NOAVIA Part 1 delivery status
 
 The repository export now contains the two workflow artifacts required for the
-interview: `workflow.noavia-ticket-pipeline.v1.json` and
+interview: `workflow.noavia-ticket-pipeline.v2.1.json` and
 `workflow.noavia-kb-ingestion.v1.json`.
 
 Run the following from

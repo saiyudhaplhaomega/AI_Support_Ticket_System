@@ -22,8 +22,11 @@ class ClassifyTicketInput(BaseModel):
     context: dict[str, Any] | None = Field(
         default=None,
         description=(
-            "Optional passthrough context. Recognized key: "
-            "`categories` (string[]) — override the default taxonomy for this call."
+            "Optional passthrough context. Recognized keys: "
+            "`categories` (string[]) — override the default taxonomy for this call; "
+            "`verify_attachment_is_invoice` (bool) — when true, also ask the model "
+            "whether the ticket's attached-PDF text (already appended to `text`) "
+            "reads like an invoice."
         ),
     )
     locale: str | None = Field(default=None, max_length=32)
@@ -50,6 +53,8 @@ class ClassifyTicketOutputData(BaseModel):
     urgency: str | None = None
     sentiment: str | None = None
     summary: str | None = None
+    attachment_is_invoice: bool | None = None
+    attachment_invoice_confidence: float | None = None
     raw_model_output: dict[str, Any] | None = None
 
 
@@ -63,6 +68,10 @@ class _ModelClassification(BaseModel):
     urgency: str
     sentiment: str
     summary: str
+    attachment_is_invoice: bool | None = Field(
+        default=None, description="Only present when the caller asked for invoice verification."
+    )
+    attachment_invoice_confidence: float | None = Field(default=None, ge=0.0, le=1.0)
 
 
 # ---------------------------------------------------------------------------

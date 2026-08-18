@@ -16,5 +16,5 @@ current fixture and implementation; future retrieval changes must be measured
 against the same cases before release use.
 
 For a low-confidence response the required sentence is exactly: `No specific
-policy found — this response is based on general knowledge.` The evaluator does
+policy found - this response is based on general knowledge.` The evaluator does
 not draft or send a customer reply.

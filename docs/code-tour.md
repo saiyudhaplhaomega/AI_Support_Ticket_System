@@ -6,7 +6,7 @@
 
 | Area | Primary locations | Evidence status |
 | --- | --- | --- |
-| Workflow | `workflow/noavia/workflow.noavia-ticket-pipeline.v1.json`, `tests/test_noavia_workflow.py` | **Verified:** inactive export and credential-free structural/Code-node harness. |
+| Workflow | `workflow/noavia/workflow.noavia-ticket-pipeline.v2.1.json`, `tests/test_noavia_workflow.py` | **Verified:** inactive export and credential-free structural/Code-node harness. |
 | Portal | `services/frontend/app.py`, `static/index.html`, `tests/test_app.py` | **Verified:** test-mode validation and synthetic acceptance. Controlled-live forwarding is **Configured but unexecuted**. |
 | AI service API | `services/classification/app/main.py`, `schemas.py`, `security.py` | **Verified:** versioned endpoints and bearer-token boundary have offline tests. |
 | Retrieval/ingestion | `services/classification/app/local_rag.py`, `ingest_cli.py`, `clients/` | **Verified:** local retrieval behavior is tested. Hosted model and Qdrant use are **Configured but unexecuted**. |

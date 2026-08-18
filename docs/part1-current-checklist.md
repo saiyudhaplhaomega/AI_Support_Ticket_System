@@ -1,4 +1,4 @@
-# NOAVIA Part 1 — current acceptance checklist
+# NOAVIA Part 1 - current acceptance checklist
 
 Run commands from `C:/Users/saiyu/Desktop/projects/Noavia/AI_Support_Ticket_System`.
 This is the authoritative verification list for the native-n8n delivery.

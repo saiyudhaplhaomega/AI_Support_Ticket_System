@@ -1,4 +1,4 @@
-# NOAVIA Part 1 — build order
+# NOAVIA Part 1 - build order
 
 Run every command below from
 `C:/Users/saiyu/Desktop/projects/Noavia/AI_Support_Ticket_System`.

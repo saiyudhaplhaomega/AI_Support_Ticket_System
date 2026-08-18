@@ -20,6 +20,7 @@ from pydantic import ValidationError
 
 from app.config import Settings, load_settings_or_exit
 from app.clients.openai_client import get_openai_client
+from app.clients.openai_chat_client import get_openai_chat_client
 from app.clients.minimax_client import get_minimax_client
 from app.clients.qdrant_client import get_qdrant_client
 from app.errors import ErrorCode, ModuleError, error_envelope, success_envelope
@@ -52,6 +53,13 @@ app = FastAPI(title="ai-classification-service", version=settings.service_versio
 
 def get_settings() -> Settings:
     return settings
+
+
+def get_chat_client(cfg: Settings):
+    """Dispatch to the configured chat-completion provider (AI_CHAT_PROVIDER)."""
+    if cfg.chat_provider == "minimax":
+        return get_minimax_client(cfg)
+    return get_openai_chat_client(cfg)
 
 
 def get_correlation_id(request: Request) -> str:
@@ -216,7 +224,7 @@ async def post_classify_ticket(
     cfg: Settings = Depends(get_settings),
     correlation_id: str = Depends(get_correlation_id),
 ) -> JSONResponse:
-    client = get_minimax_client(cfg)
+    client = get_chat_client(cfg)
     data = await classify_ticket(client, cfg, payload, correlation_id)
     log_event(
         logger, "info", "classified ticket",
@@ -227,7 +235,7 @@ async def post_classify_ticket(
 
 @app.post("/ai/grounded-draft/v1", dependencies=[Depends(require_auth)])
 async def post_grounded_draft(payload: GroundedDraftInput, cfg: Settings = Depends(get_settings)) -> JSONResponse:
-    data = await grounded_draft(get_minimax_client(cfg), cfg, payload)
+    data = await grounded_draft(get_chat_client(cfg), cfg, payload)
     return JSONResponse(status_code=200, content=success_envelope(data.model_dump()))
 
 @app.post("/ai/rag-lookup/v1", dependencies=[Depends(require_auth)])

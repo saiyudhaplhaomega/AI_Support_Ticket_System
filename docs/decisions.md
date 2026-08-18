@@ -9,7 +9,7 @@ was, and why. Pair this with
 [`docs/how-to-view-and-test.md`](how-to-view-and-test.md) (how to prove it
 works) and [`docs/capability-module-architecture.md`](capability-module-architecture.md)
 (the formal interface contract). Where a decision changed after a review
-caught a problem, that's noted — this project's git history has several
+caught a problem, that's noted - this project's git history has several
 real corrections, not just first drafts.
 
 ## Orchestration: n8n
@@ -17,17 +17,17 @@ real corrections, not just first drafts.
 **Chosen:** n8n as the workflow engine, one JSON export as the single
 source of truth, imported inactive by default.
 
-**Why:** the mission is a *reusable* SaaS factory — n8n gives a low-code,
+**Why:** the mission is a *reusable* SaaS factory - n8n gives a low-code,
 visually inspectable pipeline that a non-engineer can open and follow, while
 still allowing custom Code nodes for the parts (validation, routing math,
-audit logging) that need precise, testable logic. The alternative — a
-bespoke backend service — would be faster to unit-test but much harder to
+audit logging) that need precise, testable logic. The alternative - a
+bespoke backend service - would be faster to unit-test but much harder to
 hand over or modify without an engineer, which conflicts with the "handed
 over" part of the mission.
 
 **Trade-off accepted:** n8n's own execution behavior (activation, live HTTP
 calls, credential resolution) can't be tested from a plain Python/Node test
-runner — hence the two-tier testing approach in
+runner - hence the two-tier testing approach in
 [how-to-view-and-test.md](how-to-view-and-test.md): a credential-free harness
 that parses the export and runs its Code-node logic directly (proves the
 *logic*), separate from an owner-run live import (proves the *deployment*).
@@ -41,7 +41,7 @@ no default admin key handed to any application container.
 project's own infrastructure rather than a third-party SaaS vector store,
 which matters for a support system that may eventually index real customer
 policy/PII content. Qdrant specifically was picked over alternatives
-(pgvector, Pinecone) for its collection-scoped access tokens — it's the one
+(pgvector, Pinecone) for its collection-scoped access tokens - it's the one
 that let us hand n8n *zero* Qdrant credentials at all (see next section)
 while still letting the classification service read/write its one
 collection.
@@ -54,10 +54,10 @@ network with a single bearer token. n8n holds no `OPENAI_API_KEY`, no
 `MINIMAX_API_KEY`, and no Qdrant credential.
 
 **Why:** this was an explicitly resolved open question (architecture doc
-§7 — "n8n sub-workflow vs. standalone service?"). A standalone service won
+§7 - "n8n sub-workflow vs. standalone service?"). A standalone service won
 because it (a) is independently unit-testable without a running n8n
-instance — which is most of why Part A of the testing guide is possible at
-all — and (b) is reusable by any future non-n8n product without
+instance - which is most of why Part A of the testing guide is possible at
+all - and (b) is reusable by any future non-n8n product without
 duplicating the RAG logic, matching the "reusable capability modules"
 mission statement directly. The cost is one more container to deploy and
 one more internal API contract to keep stable, which is why that contract
@@ -86,7 +86,7 @@ service, and n8n itself are reachable only by container DNS name on the
 internal Docker network.
 
 **Why:** the default posture is "internal-only unless someone deliberately
-adds a route" — this makes accidental exposure structurally hard rather
+adds a route" - this makes accidental exposure structurally hard rather
 than something that has to be remembered. Caddy specifically over
 nginx/Traefik for automatic certificate provisioning/renewal with minimal
 config, since this stack is meant to be stood up by future non-infra
@@ -100,21 +100,21 @@ gets flagged for a human); urgency then drives notification breadth
 (critical/high → full email + Sheets row, medium → brief email + Sheets
 row, low → Sheets only).
 
-**Why:** the two axes answer different questions — confidence is "should a
+**Why:** the two axes answer different questions - confidence is "should a
 human sanity-check the AI's read of this ticket," urgency is "how loudly
 should we alert someone." Conflating them (e.g., only checking confidence
 for high-urgency tickets) would let a low-confidence but low-urgency ticket
 silently auto-route with no human check, which is the failure mode this
-threshold exists to prevent. `0.6` is a starting value, not a tuned one —
+threshold exists to prevent. `0.6` is a starting value, not a tuned one -
 see [Open items](#open-items-and-things-to-revisit) below.
 
 ## The exact fallback sentence
 
 **Chosen:** when RAG retrieval falls below `config.rag_min_score` (default
 0.6), the draft reply must contain the literal sentence *"No specific
-policy found — this response is based on general knowledge."*
+policy found - this response is based on general knowledge."*
 
-**Why:** this is a transparency requirement, not a formatting nicety — a
+**Why:** this is a transparency requirement, not a formatting nicety - a
 customer-facing draft that sounds authoritative but isn't grounded in an
 actual policy document needs to say so, verbatim and predictably enough
 that it can be asserted on in a test rather than eyeballed. That's why the
@@ -124,13 +124,13 @@ present."
 ## Test-mode frontend as a safety boundary, not just a demo
 
 **Chosen:** the demo form defaults to `NOAVIA_TEST_MODE=true`, which never
-contacts n8n at all — a real webhook URL is only reachable if an owner
+contacts n8n at all - a real webhook URL is only reachable if an owner
 explicitly disables test mode, and even then the URL is validated
 server-side (no credentials/IPs/query strings/fragments allowed in it) and
 never shipped to browser code.
 
 **Why:** the risk being designed against is a demo build accidentally
-becoming a live ticket-submission path — either by leaking a real webhook
+becoming a live ticket-submission path - either by leaking a real webhook
 URL into client-side JS, or by someone flipping a flag without realizing
 what it enables. Making test mode the *default* and the real path require
 explicit, validated, server-only configuration means the safe state is also
@@ -138,8 +138,8 @@ the easy state.
 
 ## Why agents never hold production credentials
 
-**Chosen:** no agent working on this project — CEO, Codex implementers, the
-Documentation Agent — is given `OPENAI_API_KEY`, Google/Gmail OAuth, or a
+**Chosen:** no agent working on this project - CEO, Codex implementers, the
+Documentation Agent - is given `OPENAI_API_KEY`, Google/Gmail OAuth, or a
 broad n8n admin key. Where an agent needs *any* n8n access at all (e.g. to
 read the workflow ID and confirm no duplicate exists), it's scoped per
 [`docs/n8n-paperclip-api-access.md`](n8n-paperclip-api-access.md) to a
@@ -147,7 +147,7 @@ dedicated, isolated identity/project with the minimum API scopes for a
 specific stage, approved by the owner first.
 
 **Why:** the operating rules for this project are explicit that deployment,
-credential, and side-effect decisions require owner approval — and
+credential, and side-effect decisions require owner approval - and
 practically, it means every "verified" claim in this repo's docs is backed
 by evidence an agent could actually produce (parsing an export, running a
 mocked test) rather than a claim that would require trusting an agent with
@@ -163,7 +163,7 @@ integrated into the main tree.
 network) are kept structurally separate from any live-integration claim.
 
 **Why:** the project's own history has a real example of why this
-separation matters — the RAG evaluation script had a median-calculation bug
+separation matters - the RAG evaluation script had a median-calculation bug
 that inflated a reported accuracy number, caught and fixed in SAI-52. A
 single blended "it works" test suite that mixes offline logic checks with
 unverifiable live claims makes that kind of bug harder to catch, because a
@@ -178,27 +178,27 @@ labels used throughout `docs/`).
 Not yet decided, or decided as a placeholder pending real usage data:
 
 - **Confidence threshold (0.6) and RAG score threshold (0.6)** are starting
-  values, not tuned against real ticket volume — revisit once real tickets
+  values, not tuned against real ticket volume - revisit once real tickets
   flow through and manual-review rate can be measured.
 - **PII/log retention** is explicitly called out as unset in the delivery
-  checklist (`docs/noavia-offline-delivery-evidence.md`) — needs an owner
+  checklist (`docs/noavia-offline-delivery-evidence.md`) - needs an owner
   decision on how long ticket text, AI summaries, and processing logs are
   kept before this goes anywhere near real customer data.
 - **Monitoring/alerting** on the live stack (container health, failed
-  executions, delivery failures) isn't built yet — currently you'd only
+  executions, delivery failures) isn't built yet - currently you'd only
   notice a failure by checking n8n's Executions list manually.
 - **Cost caps** on AI provider spend aren't enforced anywhere in the stack;
   a spike in ticket volume currently has no circuit breaker.
 - **Key rotation** cadence for the Qdrant JWT, classification service
-  bearer token, and OAuth credentials isn't scheduled — currently
+  bearer token, and OAuth credentials isn't scheduled - currently
   ad hoc/manual.
-- **Model version pinning** — `MiniMax-M3` and `text-embedding-3-small` are
+- **Model version pinning** - `MiniMax-M3` and `text-embedding-3-small` are
   referenced by name; if either provider deprecates or silently updates
   behind that name, nothing in this stack detects a quality regression
   except rerunning `evals/noavia_rag_eval.py` by hand.
 - **Reuse for a second product**: the capability-module contract
   (`docs/capability-module-architecture.md`) is designed to make this
-  possible, but hasn't actually been exercised by a second consumer yet —
+  possible, but hasn't actually been exercised by a second consumer yet -
   worth treating the first reuse attempt as a test of the contract itself.
 
 ## Known debt (designed + ticketed, per FINAL PLAN v6 §2.5)
@@ -241,7 +241,7 @@ ask "why isn't this here?" and these are the honest answers.
   (a) prevent Hermes temporary/session snapshots from persisting
   secret-bearing environment values; (b) future diagnostics must never
   print API-key prefixes, suffixes, full values, or any key-derived
-  material — implementers can start obeying this rule today without
+  material - implementers can start obeying this rule today without
   any Hermes-side change; (c) inspection tooling should redact
   secret-bearing environment values by design. Implementation owner is
   a Hermes maintenance profile, not the NOAVIA workflow-engineer.

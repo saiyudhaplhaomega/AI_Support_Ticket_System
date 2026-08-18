@@ -9,7 +9,7 @@ Repository baseline verification is recorded in the release handoff rather
 than duplicated here. This evidence describes the observed control-plane and
 local-fixture state; it is not an instruction to push or activate anything.
 
-## Isolated n8n workspace — 2026-08-14
+## Isolated n8n workspace - 2026-08-14
 
 The dedicated `paperclip-noavia` API capability was used only against the
 internal n8n endpoint. Workflow discovery returned exactly one workflow:
@@ -47,8 +47,8 @@ execution-verified.
 the selected Gmail OAuth2 identity; there is no sender-address expression in
 the workflow. Its `sendTo` expression reads only `route.email`, which is built
 from the server-side `NOAVIA_NOTIFY_ROUTE_ALLOWLIST_JSON` environment value.
-Ticket fields—including `requester_email`, `from_email`, `default_route_email`,
-and `routing_emails`—must never supply the Gmail sender or recipient.
+Ticket fields-including `requester_email`, `from_email`, `default_route_email`,
+and `routing_emails`-must never supply the Gmail sender or recipient.
 
 For the approved offline/test configuration, every configured route must point
 to the single approved test/sink recipient (including `default` and
@@ -56,7 +56,7 @@ to the single approved test/sink recipient (including `default` and
 and must be corrected before any owner-approved execution. This rule is
 structurally tested only; Gmail has not been executed.
 
-## Qdrant / knowledge-base — live ingestion 2026-08-14
+## Qdrant / knowledge-base - live ingestion 2026-08-14
 
 Qdrant confirmed reachable at `http://qdrant:6333` (unauthenticated,
 `AI_QDRANT_AUTH_ENABLED=false` per owner approval). Collection `noavia_kb_v1`
@@ -82,7 +82,7 @@ All eight fictional Markdown sources ingested directly via Qdrant REST API:
 1. `knowledge-base/noavia/duplicate-charge.md#0` (score=0.255)
 2. `knowledge-base/noavia/csv-import.md#0` (score=0.056)
 3. `knowledge-base/noavia/knowledge-search.md#0` (score=0.055)
-— low_confidence=False (duplicate-charge correctly ranked first)
+- low_confidence=False (duplicate-charge correctly ranked first)
 
 **Password-reset citation:**
 - source=`knowledge-base/noavia/password-reset.md` score=0.424 (top match)

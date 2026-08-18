@@ -1,5 +1,5 @@
 import openai
-from app.clients.minimax_client import MiniMaxTimeoutError
+from app.clients.chat_errors import ChatTimeoutError
 import pytest
 from fastapi.testclient import TestClient
 from qdrant_client.http.exceptions import ApiException
@@ -55,7 +55,7 @@ def test_validation_error_never_exposes_ticket_pii_in_body_or_logs(client, caplo
 
 def test_classify_success(client, monkeypatch):
     parsed = _ModelClassification(category="billing", urgency="medium", sentiment="negative", confidence=0.87, summary="Duplicate charge reported.", tags=["duplicate_charge", "refund"])
-    monkeypatch.setattr(main_module, "get_minimax_client", lambda cfg: FakeMiniMax(parsed=parsed.model_dump()))
+    monkeypatch.setattr(main_module, "get_chat_client", lambda cfg: FakeMiniMax(parsed=parsed.model_dump()))
 
     resp = client.post(
         "/ai/classify-ticket/v1",
@@ -75,9 +75,40 @@ def test_classify_success(client, monkeypatch):
     assert "X-Correlation-Id" in resp.headers
 
 
+def test_classify_invoice_verification_when_requested(client, monkeypatch):
+    parsed = _ModelClassification(
+        category="billing", urgency="medium", sentiment="neutral", confidence=0.9,
+        summary="Invoice attached.", attachment_is_invoice=True, attachment_invoice_confidence=0.95,
+    )
+    fake = FakeMiniMax(parsed=parsed.model_dump())
+    monkeypatch.setattr(main_module, "get_chat_client", lambda cfg: fake)
+
+    resp = client.post(
+        "/ai/classify-ticket/v1",
+        json={"text": "Please see attached.\n\nPDF attachment:\nInvoice #1002 Total Due: $49.99", "context": {"verify_attachment_is_invoice": True}},
+        headers=AUTH,
+    )
+    assert resp.status_code == 200
+    body = resp.json()
+    assert body["data"]["attachment_is_invoice"] is True
+    assert body["data"]["attachment_invoice_confidence"] == 0.95
+    assert "attachment_is_invoice" in fake.calls[0]["messages"][0]["content"]
+
+
+def test_classify_invoice_fields_absent_when_not_requested(client, monkeypatch):
+    parsed = _ModelClassification(category="billing", urgency="medium", sentiment="neutral", confidence=0.9, summary="No attachment.")
+    monkeypatch.setattr(main_module, "get_chat_client", lambda cfg: FakeMiniMax(parsed=parsed.model_dump()))
+
+    resp = client.post("/ai/classify-ticket/v1", json={"text": "Just a question, no attachment."}, headers=AUTH)
+    assert resp.status_code == 200
+    body = resp.json()
+    assert body["data"]["attachment_is_invoice"] is None
+    assert body["data"]["attachment_invoice_confidence"] is None
+
+
 def test_classify_correlation_id_echoed(client, monkeypatch):
     parsed = _ModelClassification(category="technical", urgency="medium", sentiment="negative", confidence=0.5, summary="Login crash reported.")
-    monkeypatch.setattr(main_module, "get_minimax_client", lambda cfg: FakeMiniMax(parsed=parsed.model_dump()))
+    monkeypatch.setattr(main_module, "get_chat_client", lambda cfg: FakeMiniMax(parsed=parsed.model_dump()))
     resp = client.post(
         "/ai/classify-ticket/v1",
         json={"text": "app crashes on login"},
@@ -87,8 +118,8 @@ def test_classify_correlation_id_echoed(client, monkeypatch):
 
 
 def test_classify_upstream_timeout_maps_to_envelope(client, monkeypatch):
-    timeout_exc = MiniMaxTimeoutError()
-    monkeypatch.setattr(main_module, "get_minimax_client", lambda cfg: FakeMiniMax(raise_exc=timeout_exc))
+    timeout_exc = ChatTimeoutError()
+    monkeypatch.setattr(main_module, "get_chat_client", lambda cfg: FakeMiniMax(raise_exc=timeout_exc))
     resp = client.post("/ai/classify-ticket/v1", json={"text": "hello there"}, headers=AUTH)
     assert resp.status_code == 200
     body = resp.json()

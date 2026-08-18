@@ -108,14 +108,17 @@ def load_settings() -> Settings:
             "deployment with authentication disabled."
         )
     embedding_provider = _optional("AI_EMBEDDING_PROVIDER", "openai").lower()
-    chat_provider = _optional("AI_CHAT_PROVIDER", "minimax").lower()
+    chat_provider = _optional("AI_CHAT_PROVIDER", "openai").lower()
     if embedding_provider != "openai":
         raise ConfigError("AI_EMBEDDING_PROVIDER must be 'openai'.")
-    if chat_provider != "minimax":
-        raise ConfigError("AI_CHAT_PROVIDER must be 'minimax'.")
+    if chat_provider not in ("openai", "minimax"):
+        raise ConfigError("AI_CHAT_PROVIDER must be 'openai' or 'minimax'.")
+    default_chat_model = "gpt-4o-mini" if chat_provider == "openai" else "MiniMax-M3"
     return Settings(
         openai_api_key=_require("OPENAI_API_KEY"),
-        minimax_api_key=_require("MINIMAX_API_KEY"),
+        # MiniMax stays optional now that OpenAI is the default chat provider;
+        # only fail fast on it when a deployment actually selects minimax.
+        minimax_api_key=(_require("MINIMAX_API_KEY") if chat_provider == "minimax" else os.environ.get("MINIMAX_API_KEY", "").strip()),
         ai_classify_api_key=_require("AI_CLASSIFY_API_KEY"),
         qdrant_url=_require("QDRANT_URL"),
         qdrant_auth_enabled=qdrant_auth_enabled,
@@ -126,8 +129,8 @@ def load_settings() -> Settings:
             _optional_int("AI_EMBEDDING_DIMENSIONS", 0) or None
         ),
         chat_provider=chat_provider,
-        chat_model=_optional("AI_CHAT_MODEL", "MiniMax-M3"),
-        request_timeout_seconds=_optional_float("AI_UPSTREAM_TIMEOUT_SECONDS", 8.0),
+        chat_model=_optional("AI_CHAT_MODEL", default_chat_model),
+        request_timeout_seconds=_optional_float("AI_UPSTREAM_TIMEOUT_SECONDS", 20.0),
         rag_default_collection=_optional("AI_RAG_COLLECTION", "kb_documents"),
         rag_default_top_k=_optional_int("AI_RAG_TOP_K_DEFAULT", 5),
         rag_max_top_k=_optional_int("AI_RAG_TOP_K_MAX", 50),

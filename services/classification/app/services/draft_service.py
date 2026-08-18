@@ -1,5 +1,5 @@
-"""Grounded support-reply drafting via MiniMax; citations always remain source metadata."""
-from app.clients.minimax_client import MiniMaxAPIError, MiniMaxTimeoutError
+"""Grounded support-reply drafting; citations always remain source metadata."""
+from app.clients.chat_errors import ChatAPIError, ChatTimeoutError
 from app.config import Settings
 from app.errors import ErrorCode, ModuleError
 from app.schemas import GroundedDraftInput, GroundedDraftOutputData
@@ -14,6 +14,6 @@ async def grounded_draft(client, settings: Settings, data: GroundedDraftInput) -
         result=await client.complete_json(model=settings.chat_model,messages=[{"role":"system","content":"Draft a concise support reply grounded only in the supplied knowledge. Return JSON with a text string. Do not claim facts outside it."},{"role":"user","content":f"Ticket:\n{data.ticket_text}\n\nKnowledge:\n{context}"}])
         text=str(result["parsed"]["text"]).strip()
         if not text: raise ValueError
-    except MiniMaxTimeoutError as exc: raise ModuleError(ErrorCode.UPSTREAM_TIMEOUT,"Draft model did not respond in time.",interface_id=INTERFACE_ID) from exc
-    except (MiniMaxAPIError, KeyError, TypeError, ValueError) as exc: raise ModuleError(ErrorCode.UPSTREAM_ERROR,"Draft model returned no structured output.",interface_id=INTERFACE_ID) from exc
+    except ChatTimeoutError as exc: raise ModuleError(ErrorCode.UPSTREAM_TIMEOUT,"Draft model did not respond in time.",interface_id=INTERFACE_ID) from exc
+    except (ChatAPIError, KeyError, TypeError, ValueError) as exc: raise ModuleError(ErrorCode.UPSTREAM_ERROR,"Draft model returned no structured output.",interface_id=INTERFACE_ID) from exc
     return GroundedDraftOutputData(text=text,citations=citations)

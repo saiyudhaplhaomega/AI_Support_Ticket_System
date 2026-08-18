@@ -1,4 +1,4 @@
-# NOAVIA Part 1 — start here
+# NOAVIA Part 1 - start here
 
 This repository is the interview submission for the NOAVIA AI support-ticket
 system. The delivery has ticket processing, initial knowledge-base ingestion,

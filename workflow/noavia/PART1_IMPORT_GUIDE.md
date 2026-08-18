@@ -1,4 +1,4 @@
-# Import guide — current NOAVIA Part 1 exports
+# Import guide - current NOAVIA Part 1 exports
 
 Run every command from
 `C:/Users/saiyu/Desktop/projects/Noavia/AI_Support_Ticket_System`.
@@ -37,7 +37,7 @@ metadata for every chunk.
 
 ## 3. Import the ticket workflow
 
-Import `workflow/noavia/workflow.noavia-ticket-pipeline.v1.json`. Bind Header
+Import `workflow/noavia/workflow.noavia-ticket-pipeline.v2.1.json`. Bind Header
 Auth, OpenAI, Qdrant, Google Drive, Google Sheets, and Gmail credentials. The
 workflow uses OpenAI `gpt-4o-mini` for both structured classification and the
 stored draft response; it never sends that draft to the requester.

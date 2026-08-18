@@ -22,8 +22,8 @@ service, credential, network, n8n, Qdrant, Google Sheets, or SMTP changes.
 
 ## Directory artifact hashes
 
-- `infra/workflows/noavia/workflow.noavia-ticket-pipeline.v1.json` — `537dc1dc16eefa85215b5ea1c0b5698e84b9e968980031dc842fe03082f1a682`
-- `infra/workflows/noavia/README.md` — `c055ffbb56e51be495e69a0de9592b7daf57e9c83f7b4d948eaf56be713ef0c1`
+- `infra/workflows/noavia/workflow.noavia-ticket-pipeline.v1.json` - `537dc1dc16eefa85215b5ea1c0b5698e84b9e968980031dc842fe03082f1a682`
+- `infra/workflows/noavia/README.md` - `c055ffbb56e51be495e69a0de9592b7daf57e9c83f7b4d948eaf56be713ef0c1`
 - `infra/services/classification/` source, requirements, Dockerfile, documentation, and tests were copied without content changes; generated `__pycache__/`, `.pytest_cache/`, `*.pyc`, and `*.pyo` artifacts were excluded.
 
 ## Deliberately excluded

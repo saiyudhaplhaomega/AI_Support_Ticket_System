@@ -1,4 +1,4 @@
-# NOAVIA Part 1 — historical QA checklist
+# NOAVIA Part 1 - historical QA checklist
 
 > **Historical reference only.** This long-form checklist was written for the
 > retired classification-service/Caddy deployment. It is preserved for audit
@@ -32,7 +32,7 @@ Frozen architecture (do not re-derive):
 2. Any FAIL blocks Part 1 sign-off. Document the failure as a separate
    `CHANGES REQUIRED` entry rather than fixing it inline.
 3. Do not activate the workflow or run a controlled-live test from this
-   checklist — execution requires owner approval and is owned by the
+   checklist - execution requires owner approval and is owned by the
    FINAL QA EXECUTION task.
 
 ---
@@ -136,7 +136,7 @@ Frozen architecture (do not re-derive):
 
 | # | Check | Command / observation | PASS signal |
 |---|---|---|---|
-| H1 | Low-similarity fallback uses the exact literal | submit a query with no KB match; inspect `draft_response` (or equivalent grounded-response field) | literal string `"No specific policy found — this response is based on general knowledge."` appears verbatim — em dash (U+2014), no extra whitespace, no trailing punctuation added |
+| H1 | Low-similarity fallback uses the exact literal | submit a query with no KB match; inspect `draft_response` (or equivalent grounded-response field) | literal string `"No specific policy found — this response is based on general knowledge."` appears verbatim - em dash (U+2014), no extra whitespace, no trailing punctuation added |
 | H2 | Fallback still records `kb_sources` | inspect same row | `kb_sources` either empty / below threshold marker (per repo convention) but still present as a column |
 | H3 | Threshold value is documented | inspect RAG node config and `docs/decisions.md` | threshold value named; matches the value used at runtime |
 

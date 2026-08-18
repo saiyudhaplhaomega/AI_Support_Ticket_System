@@ -1,4 +1,4 @@
-# NOAVIA ticket-processing workflow — `workflow.noavia-ticket-pipeline.v1`
+# NOAVIA ticket-processing workflow - `workflow.noavia-ticket-pipeline.v1`
 
 > **Current Part 1 delivery:** use [PART1_IMPORT_GUIDE.md](PART1_IMPORT_GUIDE.md)
 > for the direct-OpenAI, native-Qdrant two-workflow implementation. The
@@ -21,7 +21,7 @@ notification (only when should_notify)`
 
 RAG retrieval uses n8n's native Qdrant Vector Store node (`load` mode)
 directly against `noavia_kb_v1`, with an Embeddings OpenAI subnode for the
-query vector — the same collection and provider the ingestion workflow
+query vector - the same collection and provider the ingestion workflow
 populates, queried the same way n8n queries it natively rather than via
 an HTTP round-trip through classification-service. `classification-
 service`'s `/ai/rag-lookup/v1` endpoint still exists and is still tested,
@@ -37,7 +37,7 @@ the filename `{ticket_id}_{requester_email}_{date}.pdf`. The resulting
 `link` column, and included in the notification email body so the owner
 can open the original PDF alongside the ticket. A failed or skipped
 upload (`onError: continueRegularOutput`) does not block text extraction
-or the rest of the pipeline — `link` is simply empty on that row.
+or the rest of the pipeline - `link` is simply empty on that row.
 
 Both AI calls use only their published HTTP contracts and pass the same
 `X-Correlation-Id`. Validation failures branch before PDF extraction, AI calls,
@@ -50,7 +50,7 @@ the Sheet. Delivery nodes continue into a final outcome check, which returns a
 ## Deploy
 
 1. From the repository root, run `docker compose --profile classification-service up -d
-   --build`.
+ --build`.
 2. Import the workflow JSON into n8n.
 3. Select a Header Auth credential for ingestion. The tracked export contains
    a Google Sheets credential reference on the storage and disabled
@@ -73,15 +73,15 @@ the Sheet. Delivery nodes continue into a final outcome check, which returns a
 
 The AI token comes from n8n's `AI_CLASSIFY_API_KEY` environment value inside
 the classify HTTP node. `RAG Vector Search` and `Embeddings OpenAI (RAG)`
-use their own bound credentials (`Qdrant account`, `OpenAI account` — same
+use their own bound credentials (`Qdrant account`, `OpenAI account` - same
 ones the ingestion workflow uses) instead of that bearer token, since
 they're native n8n nodes, not HTTP calls to classification-service. Sheet
 values arrive as workflow input. Internal Gmail
 routing is server-side only: select the Gmail OAuth2 credential on
 `notify.routing-email.v1` (that authorized Gmail identity is the sender) and
 set `NOAVIA_NOTIFY_ROUTE_ALLOWLIST_JSON` in n8n environment configuration.
-For the approved test configuration, map every route—including `default` and
-`manual_review`—to the one approved sink recipient. The Gmail node's `sendTo`
+For the approved test configuration, map every route-including `default` and
+`manual_review`-to the one approved sink recipient. The Gmail node's `sendTo`
 value comes only from this allow-list. It has no configurable `from` value, and
 ticket request fields cannot set either sender or recipient. Keep the webhook
 behind Header Auth.

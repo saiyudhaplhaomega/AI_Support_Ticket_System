@@ -1,4 +1,4 @@
-# NOAVIA documentation audit — changes required
+# NOAVIA documentation audit - changes required
 
 Audit date: 2026-08-14. Result: **not accepted**.
 
