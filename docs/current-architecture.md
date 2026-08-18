@@ -6,7 +6,7 @@ This is the current interview-delivery architecture. Run commands from
 ## Architecture decisions
 
 The reproducible local stack contains n8n, Qdrant, and the optional frontend.
-`compose.yaml` starts them with `docker compose up -d`; n8n is at
+`docker-compose.yml` starts them with `docker compose up -d`; n8n is at
 `http://localhost:5678`, the frontend is at `http://localhost:8081`, and the
 Qdrant dashboard is at `http://localhost:6333/dashboard`.
 

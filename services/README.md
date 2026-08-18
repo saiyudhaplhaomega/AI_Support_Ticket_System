@@ -5,7 +5,7 @@ entirely on native n8n nodes.
 
 | Folder | Status | Purpose |
 |---|---|---|
-| `frontend/` | Optional | Flask app serving a ticket submission form and chat interfaces. Started by `compose.yaml` on port 8081. |
+| `frontend/` | Optional | Flask app serving a ticket submission form and chat interfaces. Started by `docker-compose.yml` on port 8081. |
 | `classification/` | **Retired** | A FastAPI classification microservice from an earlier iteration. |
 
 ## Why the classification service was retired

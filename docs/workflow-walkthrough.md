@@ -47,7 +47,7 @@ fileSelector: /files/noavia/*.md
 dataPropertyName: data
 ```
 Reads every markdown file as binary. The path `/files/noavia` is the container mount
-from `compose.yaml`:
+from `docker-compose.yml`:
 ```yaml
 volumes:
  - ./knowledge-base/noavia:/files/noavia:ro
@@ -443,6 +443,6 @@ X come from?" question trivial.
 | §4 Routing | `route.by-classification.v1`, `Should Notify?`, `notify.routing-email.v1` |
 | §5 Sheets storage | `notify.google-sheets.v1`, `initialize.google-sheets-header.v1` |
 | §6 Error handling & observability | `onError` on all 8 external nodes, `audit.*` nodes, `Classification Fallback`, `processing_log` |
-| §7 Docker (bonus) | `compose.yaml` |
+| §7 Docker (bonus) | `docker-compose.yml` |
 
 ---

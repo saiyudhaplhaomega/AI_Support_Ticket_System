@@ -356,6 +356,11 @@ All are header-authenticated.
 
 Every folder has its own README.
 
+At the root, [`docker-compose.yml`](docker-compose.yml) is the stack: n8n, Qdrant and
+the frontend. [`docker-compose.local.yml`](docker-compose.local.yml) is a stripped-down
+n8n and Qdrant pair for poking at workflows by hand, started with
+`docker compose -f docker-compose.local.yml up -d`.
+
 ---
 
 ## Design notes

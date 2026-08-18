@@ -8,7 +8,7 @@
 caddy_data/
 caddy_config/
 # Local preservation copy of the retired Caddy deployment. The canonical stack
-# is compose.yaml and does not depend on this archive.
+# is docker-compose.yml and does not depend on this archive.
 archive/legacy-caddy/
 
 # classification-service local dev/test artifacts.
