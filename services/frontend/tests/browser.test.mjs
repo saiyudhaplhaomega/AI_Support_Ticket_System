@@ -50,5 +50,8 @@ test('administrator assistant is a separate private chat surface with keyboard s
   assert.match(adminAssistant, /Private guidance only/);
   assert.match(adminAssistantJs, /\/api\/admin\/assistant/);
   assert.match(adminAssistantJs, /event\.key==='Enter'&&!event\.shiftKey/);
+  assert.match(knowledgeBase, /id="admin-chat-widget"[^>]*hidden/);
+  assert.match(knowledgeBase, /id="admin-chat-toggle"[^>]*aria-controls="admin-chat-widget"/);
+  assert.match(adminAssistantJs, /function setOpen\(open\)/); assert.match(adminAssistantJs, /else toggle\.focus\(\)/);
   assert.match(adminAssistantJs, /^\(\(\)=>\{/);
 });

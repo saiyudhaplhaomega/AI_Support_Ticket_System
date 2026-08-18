@@ -87,12 +87,14 @@ def main() -> None:
     assert node(public_chat, "Receive Public Chat")["parameters"]["path"] == "noavia/public-chat/v1"
     assert node(public_chat, "Receive Public Chat")["parameters"]["authentication"] == "headerAuth"
     assert node(public_chat, "Public RAG Vector Search")["parameters"]["qdrantCollection"]["value"] == "noavia_public_chat_kb_v1"
+    assert node(public_chat, "Public RAG Vector Search")["parameters"]["options"]["contentPayloadKey"] == "page_content"
     assert node(public_chat, "Embeddings OpenAI - Public RAG")["parameters"]["options"]["dimensions"] == 1536
     assert "untrusted data" in node(public_chat, "Build MiniMax Request")["parameters"]["jsCode"]
     assert node(public_chat, "MiniMax Chat Model - Public")["type"] == "@n8n/n8n-nodes-langchain.lmChatMinimax"
     assert node(public_chat, "MiniMax Chat Model - Public")["credentials"]["minimaxApi"]["name"] == "MiniMax account"
     assert node(public_chat, "MiniMax Public RAG Chain")["type"] == "@n8n/n8n-nodes-langchain.chainLlm"
     assert node(public_chat, "Respond Public Chat")["parameters"]["respondWith"] == "firstIncomingItem"
+    assert "replace(/^```" in node(public_chat, "Build Public Chat Response")["parameters"]["jsCode"]
     public_response = node(public_chat, "Build Public Chat Response")["parameters"]["jsCode"]
     assert "if (!matches.length)" in public_response and "ok:true" in public_response
     assert {"Receive Library Action", "Validate Library Action", "Qdrant Library Action", "Build Library Response", "Respond Library Action"} <= names(library)
