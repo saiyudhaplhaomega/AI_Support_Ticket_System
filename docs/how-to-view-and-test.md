@@ -1,5 +1,9 @@
 # How to view and test this project
 
+> Historical platform note: this guide documents the retired
+> Caddy/classification-service deployment. The current Part 1 import and test
+> instructions are in [workflow/noavia/PART1_IMPORT_GUIDE.md](../workflow/noavia/PART1_IMPORT_GUIDE.md).
+
 Plain-language walkthrough for the project owner. It has two independent
 parts: **Part A** works right now, needs no accounts, keys, or servers, and
 proves the code is correct. **Part B** proves the *live* system (real n8n,

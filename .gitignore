@@ -7,6 +7,9 @@
 # named volumes (named volumes above are Docker-managed and not in this tree).
 caddy_data/
 caddy_config/
+# Local preservation copy of the retired Caddy deployment. The canonical stack
+# is compose.yaml and does not depend on this archive.
+archive/legacy-caddy/
 
 # classification-service local dev/test artifacts.
 services/classification/__pycache__/

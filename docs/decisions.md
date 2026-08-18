@@ -1,5 +1,9 @@
 # Why we built it this way
 
+> Historical platform note: these decisions record the retired
+> Caddy/classification-service architecture. The current Part 1 architecture
+> is documented in [part1-current-readme.md](part1-current-readme.md).
+
 A decision log for the project owner: what was chosen, what the alternative
 was, and why. Pair this with
 [`docs/how-to-view-and-test.md`](how-to-view-and-test.md) (how to prove it

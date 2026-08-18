@@ -1,5 +1,9 @@
 # Architecture and data flow
 
+> Historical platform note: this document describes the retired
+> Caddy/classification-service architecture. For the current Part 1 design,
+> read [the current Part 1 architecture](part1-current-readme.md).
+
 **Verified structural path:**
 
 `authenticated webhook → validate/normalize → optional PDF extraction → classify → RAG lookup → route → Sheets/email nodes → response`

@@ -1,5 +1,9 @@
 # Code tour
 
+> Historical platform note: this code tour predates the simplified native-n8n
+> Part 1 stack. Use [00_START_HERE.md](00_START_HERE.md) and
+> [part1-current-readme.md](part1-current-readme.md) for current instructions.
+
 | Area | Primary locations | Evidence status |
 | --- | --- | --- |
 | Workflow | `workflow/noavia/workflow.noavia-ticket-pipeline.v1.json`, `tests/test_noavia_workflow.py` | **Verified:** inactive export and credential-free structural/Code-node harness. |
