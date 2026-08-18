@@ -54,8 +54,11 @@ def main() -> None:
     assert "response.message?.content" in classifier
     draft = node(ticket, "build.draft-prompt.v1")["parameters"]["jsCode"]
     assert "No specific policy found — this response is based on general knowledge." in draft
+    assert "Requester name:" in draft and "Address the requester by name" in draft
     route = node(ticket, "route.by-classification.v1")["parameters"]["jsCode"]
     assert "needs-manual-review" in route and "emailPolicy" in route
+    assert "urgency === 'medium' ? 'brief' : 'none'" in route
+    assert "Requester name: ${row.name}" in route and "Requester email: ${row.email}" in route
     assert "queue_label: display(category)" in route
     assert "This PDF does not appear to be an invoice" in route
     assert "Attachment check: ${row.invoice_check}" in route
