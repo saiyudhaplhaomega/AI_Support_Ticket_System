@@ -59,7 +59,7 @@ def main() -> None:
     route = node(ticket, "route.by-classification.v1")["parameters"]["jsCode"]
     assert "needs-manual-review" in route and "emailPolicy" in route
     assert "urgency === 'medium' ? 'brief' : 'none'" in route
-    assert "attachmentPresent || manualReview" in route
+    assert "emailPolicy = manualReview || urgency === 'critical'" in route
     assert "Requester name: ${row.name}" in route and "Requester email: ${row.email}" in route
     assert "queue_label: display(category)" in route
     assert "This PDF does not appear to be an invoice" in route

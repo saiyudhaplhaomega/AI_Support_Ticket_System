@@ -245,7 +245,7 @@ const category = manualReview ? 'manual_review' : String(classification.category
 const recipientMap = (() => { try { return JSON.parse(String($env.NOAVIA_NOTIFY_ROUTE_ALLOWLIST_JSON ?? '{}')); } catch { return {}; } })();
 const routeEmail = typeof recipientMap[category] === 'string' ? recipientMap[category] : (typeof recipientMap.default === 'string' ? recipientMap.default : '');
 const attachmentPresent = Boolean($json.ticket.attachment_name);
-const emailPolicy = attachmentPresent || manualReview || urgency === 'critical' || urgency === 'high' ? 'full' : urgency === 'medium' ? 'brief' : 'none';
+const emailPolicy = manualReview || urgency === 'critical' || urgency === 'high' ? 'full' : urgency === 'medium' ? 'brief' : 'none';
 const sources = ($json.knowledge_sources ?? []).slice(0, 3).map(source => source.citation ?? source.id ?? 'knowledge-base');
 const log = $json.audit_logs ?? [];
 const processingError = $json.processing_error ?? null;

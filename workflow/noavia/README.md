@@ -36,14 +36,9 @@ configuration, and verification commands.
   general knowledge.`
 - The generated customer response is saved as a draft only. It is never sent
   to the requester.
-- Critical/high and every ticket with an attachment send a full internal
-  email; medium sends a brief internal email; low text-only tickets write only
-  to the Sheet. Confidence below 0.6 always sets `needs-manual-review` and
-  sends a full internal email.
-- **Owner-approved operational override:** the assignment's default is “low:
-  Google Sheets only.” This deployment sends a full internal email whenever a
-  ticket has an attachment, even if its AI urgency is low, so uploaded files
-  are always visible to a human reviewer.
+- Critical/high send a full internal email; medium sends a brief internal
+  email; low writes only to the Sheet. Confidence below 0.6 always sets
+  `needs-manual-review` and sends a full internal email.
 
 The previous classification-service/MiniMax guide is preserved in
 [README.legacy-classification-service.md](README.legacy-classification-service.md)
