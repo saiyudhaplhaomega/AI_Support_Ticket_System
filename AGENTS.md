@@ -1,4 +1,4 @@
-# Hermes Company Project Rules
+# Project rules for AI coding agents
 
 ## Project
 
@@ -40,11 +40,6 @@ C:/Users/saiyu/Desktop/projects/Noavia/AI_Support_Ticket_System
 - Do not push to a remote unless the task explicitly authorizes it.
 - Keep changes scoped to the assigned task.
 
-## Memory
-
-- Project-specific lessons remain project-scoped unless deliberately promoted.
-- Hindsight is institutional memory, not the active task tracker.
-- Canonical project files and company governance override remembered information when they conflict.
 
 ## Current Concurrency Rule
 

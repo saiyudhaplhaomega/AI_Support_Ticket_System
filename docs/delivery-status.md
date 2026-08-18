@@ -8,8 +8,8 @@ Run the following from
 `C:/Users/saiyu/Desktop/projects/Noavia/AI_Support_Ticket_System`:
 
 ```powershell
-python scripts/build_part1_workflow.py
-python scripts/verify_part1_workflows.py
+python scripts/build_workflow.py
+python scripts/verify_workflows.py
 docker compose config --quiet
 ```
 

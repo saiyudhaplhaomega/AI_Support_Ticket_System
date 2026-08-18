@@ -3,10 +3,10 @@
 1. [00_START_HERE.md](00_START_HERE.md)
 2. [01_BUILD_ORDER.md](01_BUILD_ORDER.md)
 3. [08_APPLICATION_FEATURES.md](08_APPLICATION_FEATURES.md)
-4. [part1-current-readme.md](part1-current-readme.md)
-5. [part1-delivery-status.md](part1-delivery-status.md)
+4. [current-architecture.md](current-architecture.md)
+5. [delivery-status.md](delivery-status.md)
 6. [build/02_SAFE_N8N_TESTS.md](build/02_SAFE_N8N_TESTS.md)
-7. [part1-current-checklist.md](part1-current-checklist.md)
+7. [delivery-checklist.md](delivery-checklist.md)
 8. [build/03_LIVE_KB_VERIFICATION.md](build/03_LIVE_KB_VERIFICATION.md)
 9. [build/04_VERCEL_GOOGLE_ADMIN.md](build/04_VERCEL_GOOGLE_ADMIN.md)
 

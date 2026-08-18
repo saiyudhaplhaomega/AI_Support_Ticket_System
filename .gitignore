@@ -54,7 +54,7 @@ todo/
 archive/
 *.lnk
 
-# Local dev scratch, superseded by scripts/verify_part1_workflows.py.
+# Local dev scratch, superseded by scripts/verify_workflows.py.
 scripts/diag-workflow.json
 scripts/mock_classify_server.py
 scripts/test-pdfs/

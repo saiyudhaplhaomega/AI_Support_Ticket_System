@@ -2,7 +2,7 @@
 
 > Historical platform note: this code tour predates the simplified native-n8n
 > Part 1 stack. Use [00_START_HERE.md](00_START_HERE.md) and
-> [part1-current-readme.md](part1-current-readme.md) for current instructions.
+> [current-architecture.md](current-architecture.md) for current instructions.
 
 | Area | Primary locations | Evidence status |
 | --- | --- | --- |

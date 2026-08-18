@@ -6,9 +6,9 @@ This is the authoritative verification list for the native-n8n delivery.
 ## Offline checks
 
 ```powershell
-python scripts/build_part1_workflow.py
+python scripts/build_workflow.py
 python tests/test_noavia_workflow.py
-python scripts/verify_part1_workflows.py
+python scripts/verify_workflows.py
 docker compose config --quiet
 ```
 
@@ -32,7 +32,7 @@ Confirm the exports contain the required architecture:
 
 ## Owner-approved live checks
 
-Follow [PART1_IMPORT_GUIDE.md](../workflow/noavia/PART1_IMPORT_GUIDE.md), then
+Follow [IMPORT_GUIDE.md](../workflow/noavia/IMPORT_GUIDE.md), then
 [02_SAFE_N8N_TESTS.md](build/02_SAFE_N8N_TESTS.md). Before each live action,
 obtain approval for its side effect:
 

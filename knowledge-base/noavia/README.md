@@ -18,7 +18,7 @@ Indexed into the Qdrant collection `noavia_kb_v1` by
 | `priority-and-sla.md` | Urgency levels and response targets |
 | `live-kb-verification.md` | Verification fixture used during live testing |
 
-Nine documents, inside the 5 to 10 the task specifies.
+Nine documents.
 
 ## Chunking
 

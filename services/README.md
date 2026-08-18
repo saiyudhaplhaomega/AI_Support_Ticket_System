@@ -1,6 +1,6 @@
 # services/
 
-Supporting services. **Neither is required for the Part 1 deliverable**, which runs
+Supporting services. **Neither is required for the ticket pipeline**, which runs
 entirely on native n8n nodes.
 
 | Folder | Status | Purpose |

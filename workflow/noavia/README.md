@@ -21,7 +21,7 @@ This folder contains the current interview submission workflows:
 - `workflow.noavia-public-chat.v1.json` - isolated public-company RAG chat.
 - `workflow.noavia-admin-chat.v1.json` - isolated private admin RAG chat.
 
-Start with [PART1_IMPORT_GUIDE.md](PART1_IMPORT_GUIDE.md). It names the
+Start with [IMPORT_GUIDE.md](IMPORT_GUIDE.md). It names the
 exact import order, credential bindings, test-sheet header, safe notification
 configuration, and verification commands.
 

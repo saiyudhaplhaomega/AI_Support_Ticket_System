@@ -8,7 +8,7 @@ Corpus for the public-facing chat workflow, indexed into the separate Qdrant col
 | `about-noavia.md` | Company overview |
 | `public-support-faq.md` | Public FAQ |
 
-**Not part of the Part 1 deliverable.** The ticket pipeline reads only
+**Not used by the ticket pipeline.** The ticket pipeline reads only
 `knowledge-base/noavia/`. This exists for the public chat workflow, which was
 exploration beyond the task scope.
 

@@ -13,8 +13,8 @@ delivery.
 Run:
 
 ```powershell
-python scripts/build_part1_workflow.py
-python scripts/verify_part1_workflows.py
+python scripts/build_workflow.py
+python scripts/verify_workflows.py
 ```
 
 Expected result: `PASS: ticket=...` with ticket, ingestion, and KB-update graphs.

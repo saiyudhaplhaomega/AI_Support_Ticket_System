@@ -2,7 +2,7 @@
 
 > Historical platform note: this guide documents the retired
 > Caddy/classification-service deployment. The current Part 1 import and test
-> instructions are in [workflow/noavia/PART1_IMPORT_GUIDE.md](../workflow/noavia/PART1_IMPORT_GUIDE.md).
+> instructions are in [workflow/noavia/IMPORT_GUIDE.md](../workflow/noavia/IMPORT_GUIDE.md).
 
 Plain-language walkthrough for the project owner. It has two independent
 parts: **Part A** works right now, needs no accounts, keys, or servers, and
@@ -90,7 +90,7 @@ Runs 40 fixed test queries against the knowledge base and writes
 `evals/noavia_rag_eval_results.json`. This is checked into the repo already
 - rerun it only if you want to reproduce the numbers yourself, and review
 the diff before committing (it rewrites a tracked file). See
-[`docs/noavia-rag-evaluation.md`](noavia-rag-evaluation.md) for what the
+[`docs/rag-evaluation.md`](rag-evaluation.md) for what the
 scores mean.
 
 ### What Part A does **not** prove
@@ -113,7 +113,7 @@ Google Sheets OAuth connection, and a Gmail OAuth connection. Budget 30–60
 minutes the first time.
 
 **Why this has to be your machine, not the agent's:** the agents in this
-project (including this CEO agent) run inside a Paperclip container with no
+project run inside an isolated container with no
 Docker daemon, no domain, and no browser - so there's no way for an agent to
 `docker compose up` or click through a Google/Gmail OAuth consent screen.
 That's also deliberate, not just an environment limit: the project rule is
@@ -305,7 +305,7 @@ in the `n8n_data` volume, so nothing is lost.
   `medium` or above (low-urgency tickets are Sheets-only by design).
 - **RAG citations look wrong / low confidence** - rerun `evals/noavia_rag_eval.py`
   and compare against the committed baseline in
-  [`docs/noavia-rag-evaluation.md`](noavia-rag-evaluation.md); if you're
+  [`docs/rag-evaluation.md`](rag-evaluation.md); if you're
   still on the credential-free deterministic embedder instead of real OpenAI
   embeddings, wider separation is expected once you set
   `OPENAI_API_KEY` (see §7 of

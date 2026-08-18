@@ -2,7 +2,7 @@
 
 > Historical platform note: this document describes the retired
 > Caddy/classification-service architecture. For the current Part 1 design,
-> read [the current Part 1 architecture](part1-current-readme.md).
+> read [the current Part 1 architecture](current-architecture.md).
 
 **Verified structural path:**
 

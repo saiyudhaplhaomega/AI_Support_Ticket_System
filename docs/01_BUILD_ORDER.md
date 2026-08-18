@@ -33,7 +33,7 @@ python -m venv .venv
 .\.venv\Scripts\python.exe -m pip install -r services\frontend\requirements.txt
 .\.venv\Scripts\python.exe -m pytest -q services\frontend\tests
 .\.venv\Scripts\python.exe tests\test_noavia_workflow.py
-python scripts\verify_part1_workflows.py
+python scripts\verify_workflows.py
 ```
 
 Expected result: frontend tests pass, workflow tests report `OK`, and the

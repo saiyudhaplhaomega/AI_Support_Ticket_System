@@ -9,7 +9,7 @@ Contract tests for the workflow exports.
 
 ```bash
 python tests/test_noavia_workflow.py
-python scripts/verify_part1_workflows.py
+python scripts/verify_workflows.py
 ```
 
 ## What is not covered

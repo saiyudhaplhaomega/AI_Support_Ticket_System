@@ -1,6 +1,6 @@
-"""Build the tracked, importable NOAVIA Part 1 ticket-workflow export.
+"""Build the tracked, importable ticket-workflow export.
 
-Run from the repository root with ``python scripts/build_part1_workflow.py``.
+Run from the repository root with ``python scripts/build_workflow.py``.
 It contains no credentials or secrets; n8n binds the already-existing named
 credentials after import.
 """
@@ -227,7 +227,7 @@ return [{ json: { ...$json, processing_status: lowConfidence ? 'needs-manual-rev
     connections["Extract PDF Text"] = {"main": [[{"node": "join.pdf-branches.v1", "type": "main", "index": 1}]]}
     connections["join.pdf-branches.v1"] = {"main": [[{"node": "Add PDF Context", "type": "main", "index": 0}]]}
     # Define the complete node rather than applying incremental replacements
-    # to a previously-generated export. This keeps `build_part1_workflow.py`
+    # to a previously-generated export. This keeps `build_workflow.py`
     # deterministic when it is run more than once.
     pdf_context = node_by_name(nodes, "Add PDF Context")
     pdf_context["parameters"]["jsCode"] = """const base = $('audit.ingestion.v1').item.json;

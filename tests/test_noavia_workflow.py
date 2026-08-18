@@ -118,7 +118,7 @@ class NoaviaWorkflowTests(unittest.TestCase):
         self.assertEqual(nodes["Qdrant Vector Store - Update Documents"]["onError"], "continueErrorOutput")
 
     def test_ticket_export_builder_is_idempotent(self) -> None:
-        builder = ROOT / "scripts/build_part1_workflow.py"
+        builder = ROOT / "scripts/build_workflow.py"
         subprocess.run([sys.executable, str(builder)], cwd=ROOT, check=True, capture_output=True, text=True)
         first = TICKET.read_bytes()
         subprocess.run([sys.executable, str(builder)], cwd=ROOT, check=True, capture_output=True, text=True)

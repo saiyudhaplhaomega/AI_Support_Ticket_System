@@ -1,6 +1,6 @@
 # NOAVIA ticket-processing workflow - `workflow.noavia-ticket-pipeline.v1`
 
-> **Current Part 1 delivery:** use [PART1_IMPORT_GUIDE.md](PART1_IMPORT_GUIDE.md)
+> **Current Part 1 delivery:** use [IMPORT_GUIDE.md](IMPORT_GUIDE.md)
 > for the direct-OpenAI, native-Qdrant two-workflow implementation. The
 > material below is retained as historical reference for the earlier
 > classification-service experiment and may describe an old Sheet schema.

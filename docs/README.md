@@ -1,86 +1,59 @@
 # docs/
 
-Design notes, evidence and historical records.
+Design notes and reference material.
 
-**Read this first:** most of this folder predates the current build. The system went
-through a significant architecture change - a FastAPI classification microservice was
-removed and replaced with native n8n nodes, and the AI provider moved from MiniMax to
-OpenAI for both AI steps. Documents written before that change describe an architecture
-that no longer exists.
-
-Rather than rewrite ~25 historical documents, they are labelled below. Nothing here is
-deleted, because the audit trail is worth keeping.
-
-## Where to actually look
+## Start here
 
 | I want to... | Read |
 |---|---|
-| Install and run the project | [root `README.md`](../README.md) |
-| Understand the design rationale | [`interview-prep/02-SUBMISSION-README.md`](../interview-prep/02-SUBMISSION-README.md) |
-| Understand every node | [`interview-prep/03-PROJECT-WALKTHROUGH.md`](../interview-prep/03-PROJECT-WALKTHROUGH.md) |
-| Import the workflows | [`workflow/noavia/PART1_IMPORT_GUIDE.md`](../workflow/noavia/PART1_IMPORT_GUIDE.md) |
+| Install and run the system | [root `README.md`](../README.md) |
+| Understand why it is built this way | [`design-rationale.md`](design-rationale.md) |
+| Understand what every node does | [`workflow-walkthrough.md`](workflow-walkthrough.md) |
+| Import the workflows into n8n | [`../workflow/noavia/IMPORT_GUIDE.md`](../workflow/noavia/IMPORT_GUIDE.md) |
 
-## Current
-
-Broadly accurate, with the caveat noted.
-
-| Document | Subject | Caveat |
-|---|---|---|
-| `part1-current-readme.md` | Current Part 1 architecture | Refers to the ticket pipeline as `v1.json`; the current export is `v2.1.json` |
-| `part1-current-checklist.md` | Delivery checklist | - |
-| `part1-delivery-status.md` | Status summary | - |
-| `decisions.md` | Architecture decision record | Long-lived; includes superseded decisions by design |
-| `architecture-and-data-flow.md` | Data flow through the pipeline | Mentions the retired classification service |
-| `code-tour.md` | Guided tour of the codebase | Mentions the retired classification service |
-| `noavia-rag-evaluation.md` | RAG evaluation method and results | - |
-| `n8n-paperclip-api-access.md` | n8n API access notes | - |
-| `08_APPLICATION_FEATURES.md` | Feature inventory | Includes features beyond the Part 1 scope |
-
-## Navigation aids
+## Reference
 
 | Document | Subject |
 |---|---|
-| `00_START_HERE.md` | Original entry point. Superseded by the root README. |
-| `01_BUILD_ORDER.md` | Suggested reading order |
-| `99_DOC_ORDER.md` | Document ordering index |
-| `getting-started.md` | Early setup guide. Superseded by the root README. |
-| `testing-guide.md` | Early testing guide. Superseded by `tests/README.md`. |
+| `design-rationale.md` | Architecture decisions, AI output validation, RAG design, and what to improve next |
+| `workflow-walkthrough.md` | Node-by-node reference for the ticket pipeline and knowledge ingestion |
+| `decisions.md` | Architecture decision record, including superseded decisions |
+| `architecture-and-data-flow.md` | How data moves through the system |
+| `code-tour.md` | Guided tour of the repository |
+| `rag-evaluation.md` | Retrieval evaluation method and results |
+| `08_APPLICATION_FEATURES.md` | Feature inventory across all workflows |
 
-## Historical
-
-Accurate for the date written. **Describes the retired microservice architecture, the
-MiniMax provider configuration, or both.** Do not use these to configure anything.
+## Build and test notes
 
 | Document | Subject |
 |---|---|
-| `README.legacy-platform.md` | The previous platform, explicitly retired |
-| `noavia-part1-readme.md` | Superseded by `part1-current-readme.md` |
-| `capability-module-architecture.md` | Module architecture from the microservice era |
-| `noavia-final-report.md` | Report on the earlier implementation |
-| `noavia-part1-checklist.md` | Earlier checklist |
-| `noavia-functional-verification.md` | Verification evidence, earlier build |
-| `noavia-isolated-readiness-evidence.md` | Isolated-run evidence, earlier build |
-| `noavia-offline-delivery-evidence.md` | Offline delivery evidence, earlier build |
-| `noavia-documentation-audit.md` | A documentation audit, itself now historical |
-| `recovery-manifest.md` | Recovery notes from an earlier incident |
+| `build/02_SAFE_N8N_TESTS.md` | Running tests without touching live external services |
+| `build/03_LIVE_KB_VERIFICATION.md` | Verifying the knowledge base against a live Qdrant |
+| `build/04_VERCEL_GOOGLE_ADMIN.md` | Frontend hosting and Google admin setup |
+| `testing-guide.md` | Testing approach |
+| `how-to-view-and-test.md` | Manual verification walkthrough |
 
-## Subfolders
+## Status and checklists
 
-| Folder | Contents |
+| Document | Subject |
 |---|---|
-| [`build/`](build/) | Step-by-step build notes captured during assembly |
-| [`learning/`](learning/) | Personal study notes, predate the current architecture |
-| [`audit-history/`](audit-history/) | Dated readiness audits, never updated after the fact |
-| `archive/` | Retired material |
+| `current-architecture.md` | Current architecture summary |
+| `delivery-checklist.md` | Delivery checklist |
+| `delivery-status.md` | Status summary |
 
-## Two facts that invalidate old documents
+## Navigation
 
-If a document says either of these, it is describing the old architecture:
+`00_START_HERE.md`, `01_BUILD_ORDER.md`, `99_DOC_ORDER.md` and `getting-started.md` are
+earlier entry points, kept because they still describe the build order. For setup, the
+root README is more current.
 
-1. **"The workflow calls a classification service over HTTP."** It does not. Both AI
-   steps run through native n8n OpenAI nodes. The FastAPI service under
-   `services/classification/` is retired.
-2. **"MiniMax handles classification or draft generation."** It does not. Both use
-   OpenAI `gpt-4o-mini`, and embeddings use `text-embedding-3-small`. MiniMax is still
-   referenced by the public and admin chat workflows, which are outside the Part 1
-   scope.
+## One thing that dates a document
+
+The system originally ran ticket classification behind a FastAPI microservice, and used
+MiniMax for classification and drafting. Both changed: classification and drafting now
+run on native n8n OpenAI nodes, and the microservice under `services/classification/` is
+retired.
+
+If a document describes the ticket workflow calling a classification service over HTTP,
+it is describing the old architecture. MiniMax is still genuinely used, but only by the
+public and admin chat assistants.

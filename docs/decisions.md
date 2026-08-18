@@ -2,7 +2,7 @@
 
 > Historical platform note: these decisions record the retired
 > Caddy/classification-service architecture. The current Part 1 architecture
-> is documented in [part1-current-readme.md](part1-current-readme.md).
+> is documented in [current-architecture.md](current-architecture.md).
 
 A decision log for the project owner: what was chosen, what the alternative
 was, and why. Pair this with
@@ -142,7 +142,7 @@ the easy state.
 Documentation Agent - is given `OPENAI_API_KEY`, Google/Gmail OAuth, or a
 broad n8n admin key. Where an agent needs *any* n8n access at all (e.g. to
 read the workflow ID and confirm no duplicate exists), it's scoped per
-[`docs/n8n-paperclip-api-access.md`](n8n-paperclip-api-access.md) to a
+a scoped, approval-gated API access runbook for
 dedicated, isolated identity/project with the minimum API scopes for a
 specific stage, approved by the owner first.
 
@@ -236,14 +236,5 @@ ask "why isn't this here?" and these are the honest answers.
   (b) accept + document the duplicate-audit-logs limitation honestly
   and defer until V2. DEFAULT: option (b). Owner may pick (a) at
   planning time.
-- **T4 (Hermes-side, out of scope for this repo): secret-handling
-  hardening for diagnostics.** Not a credential rotation. Sub-actions:
-  (a) prevent Hermes temporary/session snapshots from persisting
-  secret-bearing environment values; (b) future diagnostics must never
-  print API-key prefixes, suffixes, full values, or any key-derived
-  material - implementers can start obeying this rule today without
-  any Hermes-side change; (c) inspection tooling should redact
-  secret-bearing environment values by design. Implementation owner is
-  a Hermes maintenance profile, not the NOAVIA workflow-engineer.
   `N8N_API_KEY` is NOT being rotated or replaced in this readiness round
   per owner instruction.

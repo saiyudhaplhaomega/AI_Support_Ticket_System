@@ -1,4 +1,4 @@
-"""Credential-free structural acceptance checks for the NOAVIA workflow exports."""
+"""Credential-free structural acceptance checks for the workflow exports."""
 from __future__ import annotations
 
 import json
@@ -131,7 +131,7 @@ def main() -> None:
     assert node(source_library, "Receive Source Library Read")["parameters"]["path"] == "noavia/source-library/v1"
     assert "noavia_source_documents_v2" in node(source_library, "Read Canonical Sources")["parameters"]["dataTableId"]["value"]
     assert "Create NOAVIA Source Documents Table" in names(source_bootstrap)
-    print(f"PASS: ticket={len(ticket['nodes'])} nodes; ingestion={len(ingest['nodes'])} nodes; kb-update={len(update['nodes'])} nodes; public-chat={len(public_chat['nodes'])} nodes; document-manager={len(document_manager['nodes'])} nodes; required Part 1 contracts present")
+    print(f"PASS: ticket={len(ticket['nodes'])} nodes; ingestion={len(ingest['nodes'])} nodes; kb-update={len(update['nodes'])} nodes; public-chat={len(public_chat['nodes'])} nodes; document-manager={len(document_manager['nodes'])} nodes; required workflow contracts present")
 
 
 if __name__ == "__main__":

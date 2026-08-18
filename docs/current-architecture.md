@@ -45,9 +45,9 @@ and invoice-check result.
 Run:
 
 ```powershell
-python scripts/build_part1_workflow.py
+python scripts/build_workflow.py
 python tests/test_noavia_workflow.py
-python scripts/verify_part1_workflows.py
+python scripts/verify_workflows.py
 ```
 
 Success is five passing workflow tests followed by a `PASS:` verification
@@ -55,7 +55,7 @@ line. The backend and frontend suites are also covered by the build order.
 
 ## Import and live validation
 
-Follow [the workflow import guide](../workflow/noavia/PART1_IMPORT_GUIDE.md)
+Follow [the workflow import guide](../workflow/noavia/IMPORT_GUIDE.md)
 to import both exports inactive, bind credentials, ingest the KB, and perform
 a controlled test. Live validation intentionally requires owner approval
 because it can write the supplied Google Sheet, consume OpenAI credits, and
