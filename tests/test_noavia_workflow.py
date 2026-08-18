@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
-"""Credential-free acceptance checks for the current NOAVIA Part 1 exports.
+"""Credential-free acceptance checks for the current workflow exports.
 
 The former test exercised the retired classification-service contract. It is
 preserved as ``test_noavia_workflow.legacy.py``; this test validates the
-direct-OpenAI/native-Qdrant Part 1 submission and needs no Node.js runtime.
+direct-OpenAI/native-Qdrant ticket pipeline and needs no Node.js runtime.
 """
 from __future__ import annotations
 
@@ -28,7 +28,7 @@ class NoaviaWorkflowTests(unittest.TestCase):
         cls.update = json.loads(UPDATE.read_text(encoding="utf-8"))
         cls.nodes = {node["name"]: node for node in cls.ticket["nodes"]}
 
-    def test_part1_node_graph(self) -> None:
+    def test_ticket_node_graph(self) -> None:
         required = {
             "Ingest Support Ticket", "Validate and Normalize", "Extract PDF Text",
             "build.classify-prompt.v1", "ai.classify-ticket.v1", "parse.classify-response.v1",
@@ -63,7 +63,22 @@ class NoaviaWorkflowTests(unittest.TestCase):
         self.assertIn("model", classify["parameters"])
         self.assertTrue(classify["parameters"]["simplifyOutput"])
         self.assertIn("response.message?.content", classifier)
-        self.assertLess(classifier.index("try {"), classifier.index("JSON.parse(rawContent)"))
+        # The model content must be parsed inside the try block so a malformed
+        # response becomes a caught fallback rather than an uncaught throw. The
+        # call is wrapped in stripFence(), so match the argument, not the exact call.
+        self.assertLess(classifier.index("try {"), classifier.index("JSON.parse(stripFence(rawContent))"))
+        # n8n's native OpenAI node silently drops response_format, so JSON mode
+        # cannot be relied on and fenced output must be tolerated.
+        self.assertIn("stripFence", classifier)
+        # Deterministic urgency floor: raises only, never reaches critical, and
+        # reads customer-authored fields so a crafted PDF cannot escalate itself.
+        self.assertIn("URGENCY_CLAIM", classifier)
+        self.assertIn("base.ticket?.body", classifier)
+        self.assertNotIn("base.ticket?.text", classifier)
+        self.assertIn("RANK[level] > RANK[finalUrgency]", classifier)
+        self.assertNotIn("floors.push(['critical'", classifier)
+        self.assertIn("urgency_model", classifier)
+        self.assertIn("urgency_source", classifier)
         draft = self.nodes["build.draft-prompt.v1"]["parameters"]["jsCode"]
         self.assertIn("No specific policy found — this response is based on general knowledge.", draft)
 
@@ -71,6 +86,13 @@ class NoaviaWorkflowTests(unittest.TestCase):
         route = self.nodes["route.by-classification.v1"]["parameters"]["jsCode"]
         self.assertIn("needs-manual-review", route)
         self.assertIn("queue_label: display(category)", route)
+        # The email lists only the sources the draft actually cited; the Sheets
+        # row keeps every retrieved source for audit.
+        self.assertIn("citedSources", route)
+        self.assertIn("knowledge_sources: sources.join(', ')", route)
+        self.assertIn("Knowledge sources: ${citedSources.join(', ')", route)
+        # A medium-urgency ticket with an attachment must still surface the link.
+        self.assertIn("${display(row.status)}${attachmentLine}", route)
         subject = self.nodes["notify.routing-email.v1"]["parameters"]["subject"]
         self.assertIn("route.queue_label", subject)
         self.assertNotIn("route.queue +", subject)
