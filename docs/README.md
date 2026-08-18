@@ -4,8 +4,13 @@ Design notes and reference material.
 
 ## Start here
 
+**New to the project? Follow [99_DOC_ORDER.md](99_DOC_ORDER.md)**, which lays out a
+numbered reading path from "what is this" through to the RAG internals. The table below
+is for when you already know what you are looking for.
+
 | I want to... | Read |
 |---|---|
+| Read everything in a sensible order | [`99_DOC_ORDER.md`](99_DOC_ORDER.md) |
 | Install and run the system | [root `README.md`](../README.md) |
 | Understand why it is built this way | [`design-rationale.md`](design-rationale.md) |
 | Understand what every node does | [`workflow-walkthrough.md`](workflow-walkthrough.md) |
