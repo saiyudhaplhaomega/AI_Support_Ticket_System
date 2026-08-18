@@ -83,7 +83,7 @@ def main() -> None:
     pdf_context = node(ticket, "Add PDF Context")["parameters"]["jsCode"]
     assert "rawExtracted.slice(0, 12000)" in pdf_context and "Untrusted PDF attachment text follows" in pdf_context
     assert "rag_min_score: 0.1" in node(ticket, "Validate and Normalize")["parameters"]["jsCode"]
-    assert {"Receive Public Chat", "Validate Public Question", "Public RAG Vector Search", "Embeddings OpenAI - Public RAG", "Build MiniMax Request", "MiniMax Public RAG Chain", "MiniMax Chat Model - Public", "Respond Public Chat"} <= names(public_chat)
+    assert {"Receive Public Chat", "Validate Public Question", "Public RAG Vector Search", "Embeddings OpenAI - Public RAG", "Build MiniMax Request", "MiniMax Public RAG Chain", "MiniMax Chat Model - Public", "Build Public Chat Response", "Respond Public Chat"} <= names(public_chat)
     assert node(public_chat, "Receive Public Chat")["parameters"]["path"] == "noavia/public-chat/v1"
     assert node(public_chat, "Receive Public Chat")["parameters"]["authentication"] == "headerAuth"
     assert node(public_chat, "Public RAG Vector Search")["parameters"]["qdrantCollection"]["value"] == "noavia_public_chat_kb_v1"
@@ -92,6 +92,7 @@ def main() -> None:
     assert node(public_chat, "MiniMax Chat Model - Public")["type"] == "@n8n/n8n-nodes-langchain.lmChatMinimax"
     assert node(public_chat, "MiniMax Chat Model - Public")["credentials"]["minimaxApi"]["name"] == "MiniMax account"
     assert node(public_chat, "MiniMax Public RAG Chain")["type"] == "@n8n/n8n-nodes-langchain.chainLlm"
+    assert node(public_chat, "Respond Public Chat")["parameters"]["respondWith"] == "firstIncomingItem"
     assert {"Receive Library Action", "Validate Library Action", "Qdrant Library Action", "Build Library Response", "Respond Library Action"} <= names(library)
     assert node(library, "Receive Library Action")["parameters"]["authentication"] == "headerAuth"
     validation = node(library, "Validate Library Action")["parameters"]["jsCode"]
