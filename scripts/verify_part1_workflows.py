@@ -10,6 +10,7 @@ TICKET = ROOT / "workflow/noavia/workflow.noavia-ticket-pipeline.v1.json"
 INGEST = ROOT / "workflow/noavia/workflow.noavia-kb-ingestion.v1.json"
 UPDATE = ROOT / "workflow/noavia/workflow.noavia-kb-webhook-update.v1.json"
 PUBLIC_CHAT = ROOT / "workflow/noavia/workflow.noavia-public-chat.v1.json"
+ADMIN_CHAT = ROOT / "workflow/noavia/workflow.noavia-admin-chat.v1.json"
 LIBRARY = ROOT / "workflow/noavia/workflow.noavia-kb-library.v1.json"
 DOCUMENT_MANAGER = ROOT / "workflow/noavia/workflow.noavia-document-manager.v1.json"
 SOURCE_LIBRARY = ROOT / "workflow/noavia/workflow.noavia-source-library.v1.json"
@@ -29,6 +30,7 @@ def main() -> None:
     ingest = json.loads(INGEST.read_text(encoding="utf-8"))
     update = json.loads(UPDATE.read_text(encoding="utf-8"))
     public_chat = json.loads(PUBLIC_CHAT.read_text(encoding="utf-8"))
+    admin_chat = json.loads(ADMIN_CHAT.read_text(encoding="utf-8"))
     library = json.loads(LIBRARY.read_text(encoding="utf-8"))
     document_manager = json.loads(DOCUMENT_MANAGER.read_text(encoding="utf-8"))
     source_library = json.loads(SOURCE_LIBRARY.read_text(encoding="utf-8"))
@@ -95,6 +97,9 @@ def main() -> None:
     assert node(public_chat, "MiniMax Public RAG Chain")["type"] == "@n8n/n8n-nodes-langchain.chainLlm"
     assert node(public_chat, "Respond Public Chat")["parameters"]["respondWith"] == "firstIncomingItem"
     assert "replace(/^```" in node(public_chat, "Build Public Chat Response")["parameters"]["jsCode"]
+    assert node(admin_chat, "Admin RAG Vector Search")["parameters"]["options"]["contentPayloadKey"] == "page_content"
+    assert node(admin_chat, "Respond Admin Chat")["parameters"]["respondWith"] == "firstIncomingItem"
+    assert "replace(/^```" in node(admin_chat, "Build Admin Chat Response")["parameters"]["jsCode"]
     public_response = node(public_chat, "Build Public Chat Response")["parameters"]["jsCode"]
     assert "if (!matches.length)" in public_response and "ok:true" in public_response
     assert {"Receive Library Action", "Validate Library Action", "Qdrant Library Action", "Build Library Response", "Respond Library Action"} <= names(library)
